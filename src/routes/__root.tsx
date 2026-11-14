@@ -12,6 +12,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Toaster } from "@/components/ui/sonner";
+import { Header } from "@/components/site/Header";
+import { Footer } from "@/components/site/Footer";
+import { I18nProvider } from "@/lib/i18n";
 
 function NotFoundComponent() {
   return (
@@ -75,27 +79,33 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    // Replace these placeholders with the app's name and description when first building the app.
-    // Each content route, / included, must still set its own head(). Never add og:image or
-    // twitter:image here: every page without its own would inherit the root's preview image.
+    // Each content route, / included, sets its own head(). Never add og:image here.
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "نبستور | NABSTORE" },
+      { name: "description", content: "نبستور؛ فروشگاه آنلاین محصولات گربه و سگ و گجت‌های ترند با قیمت رقابتی." },
+      { name: "author", content: "NABSTORE" },
+      { name: "theme-color", content: "#1f5f68" },
+      { property: "og:site_name", content: "NABSTORE" },
+      { property: "og:title", content: "نبستور | NABSTORE" },
+      { property: "og:description", content: "محصولات باکیفیت برای گربه‌ها و سگ‌ها و گجت‌های ترند." },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "fa_IR" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@300;600;700;800&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,
@@ -106,7 +116,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fa" dir="rtl">
       <head>
         <HeadContent />
       </head>
@@ -123,8 +133,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <I18nProvider>
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1">
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+          </main>
+          <Footer />
+        </div>
+        <Toaster position="bottom-center" />
+      </I18nProvider>
     </QueryClientProvider>
   );
 }
