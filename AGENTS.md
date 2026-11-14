@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- All UI text goes through `src/lib/i18n.tsx` (fa default/RTL, en/LTR); use logical utilities (ms/me/ps/pe/start/end) so both directions work.
+- Stage-1 sample catalog lives in `src/data/catalog.ts` and is replaced by the database in stage 3; never add fake stock, ratings or reviews to it.
