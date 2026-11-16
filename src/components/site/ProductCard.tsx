@@ -1,16 +1,19 @@
-import { Heart, ShoppingBag } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ShoppingBag, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { getCategory, discountPercent, type Product } from "@/data/catalog";
+import { getCategory, discountPercent, hasDiscount, type Product } from "@/data/products";
+import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { comingSoon } from "./coming-soon";
 
 export function ProductCard({ product, className }: { product: Product; className?: string }) {
   const { l, t, price, num } = useI18n();
+  const cart = useCart();
   const category = getCategory(product.category);
   const discount = discountPercent(product);
-  const isNew = product.tags.includes("new");
+  const needsOptions = product.options.length > 0;
 
   return (
     <article
@@ -19,11 +22,12 @@ export function ProductCard({ product, className }: { product: Product; classNam
         className,
       )}
     >
-      <div className="relative aspect-square overflow-hidden bg-sand">
+      <Link to="/product/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden bg-sand">
         <img
-          src={product.image}
+          src={product.images[0]}
           alt={l(product.name)}
           loading="lazy"
+          decoding="async"
           width={1024}
           height={1024}
           className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
@@ -34,43 +38,48 @@ export function ProductCard({ product, className }: { product: Product; classNam
               {num(discount)}٪ {t("off")}
             </span>
           )}
-          {isNew && (
-            <span className="rounded-full bg-card/90 px-2.5 py-1 text-xs font-semibold text-primary backdrop-blur">
-              {t("badgeNew")}
-            </span>
-          )}
         </div>
-        <button
-          type="button"
-          aria-label={t("addToWishlist")}
-          onClick={() => comingSoon(t("comingSoon"))}
-          className="absolute end-3 top-3 grid size-9 place-items-center rounded-full bg-card/90 text-foreground backdrop-blur transition-colors hover:text-destructive"
-        >
-          <Heart className="size-4" />
-        </button>
-      </div>
+        <span className="absolute end-3 top-3 rounded-full bg-card/90 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground backdrop-blur">
+          {t("sampleBadge")}
+        </span>
+      </Link>
 
       <div className="flex flex-1 flex-col gap-1 p-4">
         {category && <span className="text-xs font-medium text-muted-foreground">{l(category.name)}</span>}
-        <h3 className="line-clamp-2 text-[0.95rem] font-semibold leading-snug text-foreground">{l(product.name)}</h3>
+        <h3 className="line-clamp-2 text-[0.95rem] font-semibold leading-snug text-foreground">
+          <Link to="/product/$id" params={{ id: product.id }} className="hover:text-primary">
+            {l(product.name)}
+          </Link>
+        </h3>
         <p className="line-clamp-1 text-xs text-muted-foreground">{l(product.short)}</p>
 
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div className="flex flex-col">
-            {discount > 0 && product.compareAt && (
-              <span className="text-xs text-muted-foreground line-through">{price(product.compareAt)}</span>
+            {hasDiscount(product) && product.oldPrice && (
+              <span className="text-xs text-muted-foreground line-through">{price(product.oldPrice)}</span>
             )}
             <span className="text-base font-bold text-foreground">{price(product.price)}</span>
           </div>
-          <Button
-            size="icon"
-            variant="soft"
-            aria-label={t("addToCart")}
-            onClick={() => comingSoon(t("comingSoon"))}
-            className="rounded-xl"
-          >
-            <ShoppingBag />
-          </Button>
+          {needsOptions ? (
+            <Button asChild size="icon" variant="soft" className="rounded-xl" aria-label={t("chooseOptions")}>
+              <Link to="/product/$id" params={{ id: product.id }}>
+                <SlidersHorizontal />
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              variant="soft"
+              aria-label={t("addToCart")}
+              onClick={() => {
+                cart.add(product.id, {});
+                toast.success(t("addedToCart"));
+              }}
+              className="rounded-xl"
+            >
+              <ShoppingBag />
+            </Button>
+          )}
         </div>
       </div>
     </article>

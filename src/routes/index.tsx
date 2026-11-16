@@ -6,6 +6,8 @@ import {
   Flame,
   Headset,
   MessageSquareQuote,
+  Package,
+  RotateCcw,
   ShieldCheck,
   Truck,
   UserCheck,
@@ -13,25 +15,25 @@ import {
 
 import heroMain from "@/assets/hero-main.jpg";
 import heroTech from "@/assets/hero-tech.jpg";
-import feederImg from "@/assets/p-feeder.jpg";
+import phoneCaseImg from "@/assets/ph-case.svg";
 import { CategoryCard } from "@/components/site/CategoryCard";
 import { ProductGrid, ProductRail } from "@/components/site/ProductCard";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { Button } from "@/components/ui/button";
-import { byTag, categories, onSale, products } from "@/data/catalog";
+import { byTag, categories, onSale, products } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "نبستور | فروشگاه آنلاین محصولات حیوانات خانگی و گجت‌های ترند" },
+      { title: "ناب استور | قاب گوشی، لوازم حیوانات خانگی و گجت‌های ترند" },
       {
         name: "description",
         content:
-          "خرید آنلاین تخت، ظرف غذای هوشمند، لوازم بهداشتی، کیف حمل و اسباب‌بازی گربه و سگ به‌همراه گجت‌های ترند روز با قیمت رقابتی به تومان.",
+          "خرید آنلاین قاب و لوازم جانبی گوشی، ظرف غذا و آبخوری، اسباب‌بازی، قلاده، لوازم بهداشتی، تخت و کیف حمل گربه و سگ و گجت‌های ترند با قیمت به تومان.",
       },
-      { property: "og:title", content: "نبستور | NABSTORE" },
-      { property: "og:description", content: "محصولات باکیفیت برای گربه‌ها و سگ‌ها و گجت‌های ترند، با قیمت رقابتی." },
+      { property: "og:title", content: "ناب استور | NABSTORE" },
+      { property: "og:description", content: "قاب و لوازم جانبی گوشی، محصولات گربه و سگ و گجت‌های ترند." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -45,6 +47,7 @@ function Index() {
       <Hero />
       <ValueStrip />
       <CategoriesSection />
+      <PhoneSection />
       <TrendingSection />
       <NewArrivals />
       <OffersSection />
@@ -97,7 +100,7 @@ function Hero() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <Link
             to="/category/$slug"
-            params={{ slug: "tech" }}
+            params={{ slug: "gadgets" }}
             className="group relative isolate flex min-h-52 flex-col justify-end overflow-hidden rounded-3xl bg-ink p-6"
           >
             <img
@@ -115,19 +118,19 @@ function Hero() {
           </Link>
           <Link
             to="/category/$slug"
-            params={{ slug: "smart-bowls" }}
+            params={{ slug: "phone-cases" }}
             className="group relative isolate flex min-h-52 items-center gap-4 overflow-hidden rounded-3xl bg-primary-soft p-6"
           >
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-primary-deep">{t("promoSmartTitle")}</h2>
-              <p className="mt-1 text-sm text-primary-deep/70">{t("promoSmartText")}</p>
+              <h2 className="text-xl font-bold text-primary-deep">{t("promoPhoneTitle")}</h2>
+              <p className="mt-1 text-sm text-primary-deep/70">{t("promoPhoneText")}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
                 {t("viewAll")}
                 <ArrowLeft className="size-4 ltr:rotate-180" />
               </span>
             </div>
             <img
-              src={feederImg}
+              src={phoneCaseImg}
               alt=""
               width={1024}
               height={1024}
@@ -144,10 +147,10 @@ function Hero() {
 function ValueStrip() {
   const { t } = useI18n();
   const items = [
-    { Icon: ShieldCheck, title: t("valueGenuine"), text: t("valueGenuineText") },
     { Icon: Truck, title: t("valueShipping"), text: t("valueShippingText") },
+    { Icon: Package, title: t("valuePackaging"), text: t("valuePackagingText") },
     { Icon: Headset, title: t("valueSupport"), text: t("valueSupportText") },
-    { Icon: BadgePercent, title: t("valuePrice"), text: t("valuePriceText") },
+    { Icon: RotateCcw, title: t("valueReturns"), text: t("valueReturnsText") },
   ];
   return (
     <section className="container-page mt-6">
@@ -159,7 +162,7 @@ function ValueStrip() {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-bold text-foreground">{title}</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{text}</p>
+              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{text}</p>
             </div>
           </div>
         ))}
@@ -173,11 +176,22 @@ function CategoriesSection() {
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("catTitle")} subtitle={t("catSubtitle")} link={{ to: "/shop" }} />
-      <div className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-5 sm:gap-x-4">
+      <div className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-4 sm:gap-x-4 lg:grid-cols-7">
         {categories.map((c) => (
           <CategoryCard key={c.slug} category={c} />
         ))}
       </div>
+    </section>
+  );
+}
+
+function PhoneSection() {
+  const { l } = useI18n();
+  const cat = categories[0];
+  return (
+    <section className="container-page mt-16 sm:mt-20">
+      <SectionHeader title={l(cat.name)} subtitle={l(cat.description)} link={{ to: "/category/$slug", params: { slug: cat.slug } }} />
+      <ProductRail products={products.filter((p) => p.category === cat.slug).slice(0, 4)} />
     </section>
   );
 }
@@ -254,7 +268,7 @@ function BestSellers() {
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("bestSellers")} subtitle={t("bestSellersSubtitle")} link={{ to: "/shop" }} />
-      <ProductRail products={byTag("best").slice(0, 4)} />
+      <ProductRail products={byTag("pick").slice(0, 4)} />
     </section>
   );
 }

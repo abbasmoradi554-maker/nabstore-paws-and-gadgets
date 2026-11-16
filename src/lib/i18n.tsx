@@ -119,6 +119,8 @@ const dict = {
   clearFilters: { fa: "حذف فیلترها", en: "Clear filters" },
   resultsFor: { fa: "نتایج جستجو برای", en: "Results for" },
   priceRange: { fa: "بازه قیمت", en: "Price range" },
+  priceUpTo: { fa: "تا", en: "Up to" },
+  priceOver: { fa: "بالای", en: "Over" },
   anyPrice: { fa: "همه قیمت‌ها", en: "Any price" },
   minPrice: { fa: "از (تومان)", en: "From (Toman)" },
   maxPrice: { fa: "تا (تومان)", en: "To (Toman)" },

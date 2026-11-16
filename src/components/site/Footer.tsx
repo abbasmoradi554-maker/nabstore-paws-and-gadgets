@@ -1,18 +1,32 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Linkedin, Mail, MessageCircle, Phone, Send } from "lucide-react";
+import { Instagram, Mail, MapPin, Phone, Send, ShieldCheck } from "lucide-react";
 
-import { categories } from "@/data/catalog";
-import { useI18n } from "@/lib/i18n";
-import { siteConfig } from "@/lib/site-config";
+import { categories } from "@/data/products";
+import { jalaliYear, useI18n } from "@/lib/i18n";
+import { instagramUrl, isSet, siteConfig, telegramUrl } from "@/lib/site-config";
 import { Logo } from "./Logo";
 
 export function Footer() {
-  const { t, l, num } = useI18n();
+  const { t, l, lang } = useI18n();
   const socials = [
-    { href: siteConfig.social.instagram, label: "Instagram", Icon: Instagram },
-    { href: siteConfig.social.telegram, label: "Telegram", Icon: Send },
-    { href: siteConfig.social.whatsapp, label: "WhatsApp", Icon: MessageCircle },
-    { href: siteConfig.social.linkedin, label: "LinkedIn", Icon: Linkedin },
+    { href: instagramUrl(), label: "Instagram", Icon: Instagram },
+    { href: telegramUrl(), label: "Telegram", Icon: Send },
+  ];
+  const helpLinks = [
+    { to: "/about", label: t("about") },
+    { to: "/contact", label: t("contact") },
+    { to: "/faq", label: t("faq") },
+    { to: "/shipping", label: t("shipping") },
+  ] as const;
+  const policyLinks = [
+    { to: "/terms", label: t("terms") },
+    { to: "/returns", label: t("returns") },
+    { to: "/privacy", label: t("privacy") },
+  ] as const;
+  const contactItems = [
+    { Icon: Phone, label: t("phone"), value: siteConfig.phone, ltr: true },
+    { Icon: Mail, label: t("email"), value: siteConfig.email, ltr: true },
+    { Icon: MapPin, label: t("address"), value: siteConfig.address, ltr: false },
   ];
 
   return (
@@ -20,7 +34,8 @@ export function Footer() {
       <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <Logo inverted />
-          <p className="mt-5 max-w-sm text-sm leading-7 text-ink-foreground/70">{t("footerAbout")}</p>
+          <p className="mt-2 text-sm font-semibold text-ink-foreground/80">{siteConfig.nameFa}</p>
+          <p className="mt-4 max-w-sm text-sm leading-7 text-ink-foreground/70">{t("footerAbout")}</p>
           <p className="mt-6 text-xs font-semibold text-ink-foreground/60">{t("followUs")}</p>
           <div className="mt-3 flex gap-2">
             {socials.map(({ href, label, Icon }) =>
@@ -38,7 +53,7 @@ export function Footer() {
               ) : (
                 <span
                   key={label}
-                  aria-label={label}
+                  aria-label={`${label} — ${t("toBeAnnounced")}`}
                   title={t("toBeAnnounced")}
                   className="grid size-10 place-items-center rounded-xl border border-ink-foreground/10 text-ink-foreground/40"
                 >
@@ -51,8 +66,8 @@ export function Footer() {
 
         <div className="lg:col-span-3">
           <h3 className="text-sm font-bold">{t("footerShop")}</h3>
-          <ul className="mt-4 grid grid-cols-1 gap-2.5 text-sm text-ink-foreground/70">
-            {categories.slice(0, 6).map((c) => (
+          <ul className="mt-4 grid gap-2.5 text-sm text-ink-foreground/70">
+            {categories.map((c) => (
               <li key={c.slug}>
                 <Link to="/category/$slug" params={{ slug: c.slug }} className="hover:text-ink-foreground">
                   {l(c.name)}
@@ -62,44 +77,56 @@ export function Footer() {
           </ul>
         </div>
 
-        <div className="lg:col-span-2">
-          <h3 className="text-sm font-bold">{t("footerHelp")}</h3>
-          <ul className="mt-4 grid gap-2.5 text-sm text-ink-foreground/70">
-            <li>
-              <Link to="/shop" className="hover:text-ink-foreground">{t("shop")}</Link>
-            </li>
-            <li>
-              <Link to="/trending" className="hover:text-ink-foreground">{t("trendingNow")}</Link>
-            </li>
-            <li>
-              <Link to="/shop" search={{ sale: true }} className="hover:text-ink-foreground">{t("offers")}</Link>
-            </li>
-            <li>
-              <Link to="/contact" className="hover:text-ink-foreground">{t("contact")}</Link>
-            </li>
-          </ul>
+        <div className="grid grid-cols-2 gap-8 lg:col-span-2 lg:grid-cols-1">
+          <div>
+            <h3 className="text-sm font-bold">{t("footerHelp")}</h3>
+            <ul className="mt-4 grid gap-2.5 text-sm text-ink-foreground/70">
+              {helpLinks.map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="hover:text-ink-foreground">{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-sm font-bold">{t("footerPolicies")}</h3>
+            <ul className="mt-4 grid gap-2.5 text-sm text-ink-foreground/70">
+              {policyLinks.map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="hover:text-ink-foreground">{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="lg:col-span-3">
           <h3 className="text-sm font-bold">{t("footerContact")}</h3>
           <ul className="mt-4 grid gap-3 text-sm text-ink-foreground/70">
-            <li className="flex items-center gap-2.5">
-              <Phone className="size-4 shrink-0" />
-              <span>{t("phone")}:</span>
-              <span dir="ltr">{siteConfig.phone || t("toBeAnnounced")}</span>
-            </li>
-            <li className="flex items-center gap-2.5">
-              <Mail className="size-4 shrink-0" />
-              <span>{t("email")}:</span>
-              <span dir="ltr">{siteConfig.email || t("toBeAnnounced")}</span>
-            </li>
+            {contactItems.map(({ Icon, label, value, ltr }) => (
+              <li key={label} className="flex items-start gap-2.5">
+                <Icon className="mt-0.5 size-4 shrink-0" />
+                <span>{label}:</span>
+                <span dir={ltr && isSet(value) ? "ltr" : undefined}>{isSet(value) ? value : t("toBeAnnounced")}</span>
+              </li>
+            ))}
           </ul>
+          {/* Reserved for the e-Trust (Enamad) badge: paste the official badge code here once issued. */}
+          <div
+            aria-label={t("enamadSlot")}
+            className="mt-6 grid size-28 place-items-center rounded-2xl border border-dashed border-ink-foreground/25 p-3 text-center text-[0.7rem] leading-5 text-ink-foreground/50"
+          >
+            <span className="flex flex-col items-center gap-1.5">
+              <ShieldCheck className="size-5" />
+              {t("enamadSlot")}
+            </span>
+          </div>
         </div>
       </div>
       <div className="border-t border-ink-foreground/10">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-ink-foreground/55 sm:flex-row">
           <span>
-            © {num(new Date().getFullYear())} NABSTORE — {t("rights")}
+            © {jalaliYear(lang)} {lang === "fa" ? siteConfig.nameFa : siteConfig.nameEn} — {t("rights")}
           </span>
         </div>
       </div>

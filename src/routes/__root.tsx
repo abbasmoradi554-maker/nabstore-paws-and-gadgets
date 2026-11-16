@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { I18nProvider } from "@/lib/i18n";
+import { CartProvider } from "@/lib/cart";
 
 function NotFoundComponent() {
   return (
@@ -83,13 +84,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "نبستور | NABSTORE" },
-      { name: "description", content: "نبستور؛ فروشگاه آنلاین محصولات گربه و سگ و گجت‌های ترند با قیمت رقابتی." },
+      { title: "ناب استور | NABSTORE" },
+      { name: "description", content: "ناب استور؛ فروشگاه آنلاین قاب و لوازم جانبی گوشی، محصولات گربه و سگ و گجت‌های ترند." },
       { name: "author", content: "NABSTORE" },
       { name: "theme-color", content: "#1f5f68" },
       { property: "og:site_name", content: "NABSTORE" },
-      { property: "og:title", content: "نبستور | NABSTORE" },
-      { property: "og:description", content: "محصولات باکیفیت برای گربه‌ها و سگ‌ها و گجت‌های ترند." },
+      { property: "og:title", content: "ناب استور | NABSTORE" },
+      { property: "og:description", content: "قاب و لوازم جانبی گوشی، محصولات گربه و سگ و گجت‌های ترند." },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "fa_IR" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -134,6 +135,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
+        <CartProvider>
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">
@@ -143,6 +145,7 @@ function RootComponent() {
           <Footer />
         </div>
         <Toaster position="bottom-center" />
+        </CartProvider>
       </I18nProvider>
     </QueryClientProvider>
   );

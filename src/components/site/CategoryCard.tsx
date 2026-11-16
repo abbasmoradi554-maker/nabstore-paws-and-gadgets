@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import type { Category } from "@/data/catalog";
+import type { Category } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
 
 export function CategoryCard({ category }: { category: Category }) {

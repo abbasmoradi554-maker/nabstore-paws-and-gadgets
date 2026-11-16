@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { ProductGrid } from "@/components/site/ProductCard";
-import { getCategory, products } from "@/data/catalog";
+import { getCategory, products } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/category/$slug")({
@@ -12,10 +12,10 @@ export const Route = createFileRoute("/category/$slug")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: loaderData ? `${loaderData.title} | نبستور` : "دسته‌بندی | نبستور" },
-      { name: "description", content: loaderData?.description ?? "دسته‌بندی محصولات نبستور" },
-      { property: "og:title", content: loaderData ? `${loaderData.title} | نبستور` : "نبستور" },
-      { property: "og:description", content: loaderData?.description ?? "دسته‌بندی محصولات نبستور" },
+      { title: loaderData ? `${loaderData.title} | ناب استور` : "دسته‌بندی | ناب استور" },
+      { name: "description", content: loaderData?.description ?? "دسته‌بندی محصولات ناب استور" },
+      { property: "og:title", content: loaderData ? `${loaderData.title} | ناب استور` : "ناب استور" },
+      { property: "og:description", content: loaderData?.description ?? "دسته‌بندی محصولات ناب استور" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -42,11 +42,25 @@ function CategoryPage() {
   return (
     <section className="container-page pt-8">
       <div className="flex items-center gap-5 rounded-3xl bg-primary-soft p-6 sm:p-8">
-        <img src={category.image} alt="" width={1024} height={1024} className="size-20 rounded-2xl object-cover sm:size-28" />
+        <img src={category.image} alt="" width={1024} height={1024} loading="lazy" className="size-20 rounded-2xl object-cover sm:size-28" />
         <div>
           <h1 className="text-2xl font-bold text-primary-deep sm:text-3xl">{l(category.name)}</h1>
           <p className="mt-1 text-sm text-primary-deep/70 sm:text-base">{l(category.description)}</p>
           <p className="mt-2 text-xs text-primary-deep/60">{num(list.length)} {t("results")}</p>
+          {category.subcategories && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {category.subcategories.map((s) => (
+                <Link
+                  key={s.slug}
+                  to="/shop"
+                  search={{ cat: category.slug, sub: s.slug }}
+                  className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-primary hover:bg-card/80"
+                >
+                  {l(s.name)}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <ProductGrid products={list} className="mt-8" />

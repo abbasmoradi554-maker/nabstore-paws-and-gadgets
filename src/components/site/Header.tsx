@@ -4,7 +4,8 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { categories } from "@/data/catalog";
+import { categories } from "@/data/products";
+import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 import { comingSoon } from "./coming-soon";
 import { Logo } from "./Logo";
@@ -44,7 +45,8 @@ function LangSwitch() {
 }
 
 export function Header() {
-  const { t, l } = useI18n();
+  const { t, l, num } = useI18n();
+  const cart = useCart();
   const [open, setOpen] = useState(false);
 
   const mainLinks = [
@@ -52,6 +54,12 @@ export function Header() {
     { to: "/shop", label: t("shop") },
     { to: "/trending", label: t("trendingNow") },
     { to: "/contact", label: t("contact") },
+  ] as const;
+  const infoLinks = [
+    { to: "/about", label: t("about") },
+    { to: "/faq", label: t("faq") },
+    { to: "/shipping", label: t("shipping") },
+    { to: "/returns", label: t("returns") },
   ] as const;
 
   return (
@@ -99,6 +107,17 @@ export function Header() {
                     {l(c.name)}
                   </Link>
                 ))}
+                <span className="my-3 h-px bg-border" />
+                {infoLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setOpen(false)}
+                    className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </nav>
             </SheetContent>
           </Sheet>
@@ -125,8 +144,15 @@ export function Header() {
             >
               <Heart className="size-5" />
             </Button>
-            <Button variant="ghost" size="icon-lg" aria-label={t("cart")} onClick={() => comingSoon(t("comingSoon"))}>
-              <ShoppingBag className="size-5" />
+            <Button asChild variant="ghost" size="icon-lg" className="relative">
+              <Link to="/cart" aria-label={t("cart")}>
+                <ShoppingBag className="size-5" />
+                {cart.count > 0 && (
+                  <span className="absolute -top-0.5 -end-0.5 grid min-w-5 place-items-center rounded-full bg-highlight px-1 text-[0.65rem] font-bold leading-5 text-highlight-foreground">
+                    {num(cart.count)}
+                  </span>
+                )}
+              </Link>
             </Button>
           </div>
         </div>
@@ -152,7 +178,7 @@ export function Header() {
             ))}
             <span className="h-4 w-px bg-border" />
             <div className="scrollbar-none flex items-center gap-5 overflow-x-auto">
-              {categories.slice(0, 7).map((c) => (
+              {categories.map((c) => (
                 <Link
                   key={c.slug}
                   to="/category/$slug"

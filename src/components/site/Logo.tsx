@@ -23,12 +23,12 @@ export function Logo({ className, inverted }: { className?: string; inverted?: b
       <LogoMark />
       <span
         className={cn(
-          "font-[Sora,Manrope,sans-serif] text-[1.15rem] leading-none tracking-[0.14em]",
+          "inline-flex items-baseline gap-1 font-[Sora,Manrope,sans-serif] leading-none",
           inverted ? "text-ink-foreground" : "text-foreground",
         )}
       >
-        <span className="font-extrabold">NAB</span>
-        <span className="font-light">STORE</span>
+        <span className="text-[1.45rem] font-extrabold tracking-[0.08em]">NAB</span>
+        <span className="text-[0.72rem] font-semibold tracking-[0.22em] opacity-80">STORE</span>
       </span>
     </span>
   );

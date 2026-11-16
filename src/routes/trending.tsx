@@ -2,16 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 
 import { ProductGrid } from "@/components/site/ProductCard";
-import { byTag } from "@/data/catalog";
+import { byTag } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/trending")({
   head: () => ({
     meta: [
-      { title: "ترندهای روز | نبستور" },
-      { name: "description", content: "محبوب‌ترین محصولات حیوانات خانگی و گجت‌های ترند این هفته در نبستور." },
-      { property: "og:title", content: "ترندهای روز نبستور" },
-      { property: "og:description", content: "محبوب‌ترین انتخاب‌های این هفته." },
+      { title: "ترندهای روز | ناب استور" },
+      { name: "description", content: "ترندهای تازه ناب استور: قاب گوشی، لوازم حیوانات خانگی و گجت‌های کاربردی." },
+      { property: "og:title", content: "ترندهای روز ناب استور" },
+      { property: "og:description", content: "ترندهای تازه ناب استور." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
