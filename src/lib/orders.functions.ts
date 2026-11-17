@@ -6,7 +6,7 @@ import { priceOrder } from "./order-pricing";
 function makeOrderCode() {
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
-  return `NB-${String(buf[0] % 100000000).padStart(8, "0")}`;
+  return `NB-${String((buf[0] ?? 0) % 100000000).padStart(8, "0")}`;
 }
 
 // Public endpoint: anyone can place an order. Input is validated with zod and

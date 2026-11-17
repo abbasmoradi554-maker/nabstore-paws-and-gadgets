@@ -31,4 +31,7 @@ use the editor.
 
 ## Project rules
 - All UI text goes through `src/lib/i18n.tsx` (fa default/RTL, en/LTR); use logical utilities (ms/me/ps/pe/start/end) so both directions work.
-- Stage-1 sample catalog lives in `src/data/catalog.ts` and is replaced by the database in stage 3; never add fake stock, ratings or reviews to it.
+- Sample catalog lives in `src/data/products.ts` (category order = display order) and is replaced by the database later; never add fake stock, ratings or reviews to it.
+- Contact details live only in `src/lib/site-config.ts`; `[BRACKETED]` values count as unset (use `isSet`). Why: one place to fill in real details.
+- Orders are written only by the `placeOrder` server function, which re-prices items from the catalog; the `orders` table has no client policies. Why: never trust client prices.
+- Cart lives in localStorage via `src/lib/cart.tsx`; read storage only in effects. Why: avoids hydration mismatches.

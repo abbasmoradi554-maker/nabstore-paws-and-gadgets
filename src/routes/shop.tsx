@@ -7,7 +7,15 @@ import { useI18n } from "@/lib/i18n";
 import { toLatinDigits } from "@/lib/order-schema";
 import { cn } from "@/lib/utils";
 
-type ShopSearch = { q?: string; cat?: string; sub?: string; sale?: boolean; min?: number; max?: number; sort?: SortKey };
+type ShopSearch = {
+  q?: string | undefined;
+  cat?: string | undefined;
+  sub?: string | undefined;
+  sale?: boolean | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
+  sort?: SortKey | undefined;
+};
 
 const toNum = (v: unknown) => {
   const n = typeof v === "number" ? v : typeof v === "string" ? Number(toLatinDigits(v)) : NaN;
@@ -16,13 +24,13 @@ const toNum = (v: unknown) => {
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (s: Record<string, unknown>): ShopSearch => ({
-    q: typeof s.q === "string" && s.q ? s.q.slice(0, 100) : undefined,
-    cat: typeof s.cat === "string" && s.cat ? s.cat : undefined,
-    sub: typeof s.sub === "string" && s.sub ? s.sub : undefined,
-    sale: s.sale === true || s.sale === "true" ? true : undefined,
-    min: toNum(s.min),
-    max: toNum(s.max),
-    sort: sortKeys.includes(s.sort as SortKey) ? (s.sort as SortKey) : undefined,
+    q: typeof s["q"] === "string" && s["q"] ? s["q"].slice(0, 100) : undefined,
+    cat: typeof s["cat"] === "string" && s["cat"] ? s["cat"] : undefined,
+    sub: typeof s["sub"] === "string" && s["sub"] ? s["sub"] : undefined,
+    sale: s["sale"] === true || s["sale"] === "true" ? true : undefined,
+    min: toNum(s["min"]),
+    max: toNum(s["max"]),
+    sort: sortKeys.includes(s["sort"] as SortKey) ? (s["sort"] as SortKey) : undefined,
   }),
   head: () => ({
     meta: [
@@ -37,7 +45,7 @@ export const Route = createFileRoute("/shop")({
   component: Shop,
 });
 
-const priceRanges: { min?: number; max?: number }[] = [
+const priceRanges: { min?: number | undefined; max?: number | undefined }[] = [
   { max: 300000 },
   { min: 300000, max: 800000 },
   { min: 800000, max: 1500000 },
@@ -69,7 +77,7 @@ function Shop() {
   const on = "border-primary bg-primary text-primary-foreground";
   const off = "bg-card hover:bg-secondary";
 
-  const rangeLabel = (r: { min?: number; max?: number }) => {
+  const rangeLabel = (r: { min?: number | undefined; max?: number | undefined }) => {
     if (r.min == null) return `${t("priceUpTo")} ${price(r.max!)}`;
     if (r.max == null) return `${t("priceOver")} ${price(r.min)}`;
     return `${num(r.min)} – ${price(r.max)}`;

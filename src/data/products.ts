@@ -528,13 +528,13 @@ export type SortKey = "newest" | "price-asc" | "price-desc";
 export const sortKeys: SortKey[] = ["newest", "price-asc", "price-desc"];
 
 export type ProductFilter = {
-  q?: string;
-  cat?: string;
-  sub?: string;
-  sale?: boolean;
-  min?: number;
-  max?: number;
-  sort?: SortKey;
+  q?: string | undefined;
+  cat?: string | undefined;
+  sub?: string | undefined;
+  sale?: boolean | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
+  sort?: SortKey | undefined;
 };
 
 export function filterProducts(opts: ProductFilter) {

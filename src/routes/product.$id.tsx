@@ -68,7 +68,7 @@ function ProductDetail({ id }: { id: string }) {
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<Record<string, string>>(() =>
-    Object.fromEntries(product.options.map((o) => [o.type, o.values[0].fa])),
+    Object.fromEntries(product.options.map((o) => [o.type, o.values[0]?.fa ?? ""])),
   );
   const discount = discountPercent(product);
   const related = relatedProducts(product);
@@ -100,7 +100,7 @@ function ProductDetail({ id }: { id: string }) {
         <div>
           <div className="relative aspect-square overflow-hidden rounded-3xl border bg-sand">
             <img
-              src={product.images[active]}
+              src={product.images[active] ?? product.images[0]}
               alt={l(product.name)}
               width={1024}
               height={1024}

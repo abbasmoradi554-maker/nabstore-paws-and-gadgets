@@ -1,16 +1,15 @@
 # NABSTORE Roadmap
 
-## Stage 1 — Design & storefront shell
-- [ ] Design system, logo, Persian/English switch (RTL/LTR)
-- [ ] Homepage: hero, categories, Trending Now, new arrivals, best sellers, offers, recommended, reviews, footer
-- [ ] Shop & category pages with sample product cards
+## Done
+- [x] Design system, logo, Persian/English switch (RTL/LTR)
+- [x] Homepage, 7 categories, sample catalog (26 products)
+- [x] Product pages, search, category/price filters, sorting
+- [x] Cart (saved on device) and checkout; orders saved to the database
+- [x] About, Contact, Terms, Returns, Shipping, Privacy, FAQ pages
 
-## Stage 2 — Shopping
-- [ ] Product detail pages, search, advanced filters
-- [ ] Cart & checkout, wishlist, compare
-- [ ] Customer accounts (mobile number login), dashboard, order history
+## Waiting on the owner
+- [ ] Real phone, email, address, Instagram, Telegram (placeholders in site config)
+- [ ] Enamad badge code for the reserved footer box
 
-## Stage 3 — Backend & admin
-- [ ] Database, admin panel (products, categories, prices, inventory, customers, orders, discounts, blog, banners)
-- [ ] Inventory: own warehouse + external suppliers
-- [ ] Real Iranian payment gateway, SMS, shipping integrations; blog; reviews
+## Later (not requested yet)
+- [ ] Customer accounts, admin panel, inventory, payment gateway, SMS

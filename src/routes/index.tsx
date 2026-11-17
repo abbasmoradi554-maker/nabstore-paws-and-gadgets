@@ -188,6 +188,7 @@ function CategoriesSection() {
 function PhoneSection() {
   const { l } = useI18n();
   const cat = categories[0];
+  if (!cat) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={l(cat.name)} subtitle={l(cat.description)} link={{ to: "/category/$slug", params: { slug: cat.slug } }} />

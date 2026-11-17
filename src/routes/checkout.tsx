@@ -191,7 +191,7 @@ function Checkout() {
 const inputCls =
   "h-11 w-full rounded-xl border bg-background px-4 text-sm text-foreground outline-none transition focus:border-ring aria-[invalid=true]:border-destructive";
 
-function FormField({ label, error, className, children }: { label: string; error?: string; className?: string; children: ReactNode }) {
+function FormField({ label, error, className, children }: { label: string; error?: string | undefined; className?: string; children: ReactNode }) {
   return (
     <label className={cn("grid gap-1.5 text-sm font-medium", className)}>
       {label}

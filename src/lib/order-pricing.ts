@@ -17,7 +17,9 @@ export function normalizeOptions(product: Product, options: Record<string, strin
     const chosen = options[opt.type];
     const valid = opt.values.find((v) => v.fa === chosen);
     if (chosen && !valid) return null;
-    out[opt.type] = valid ? valid.fa : opt.values[0].fa;
+    const fallback = opt.values[0];
+    if (!valid && !fallback) return null;
+    out[opt.type] = valid ? valid.fa : fallback!.fa;
   }
   return out;
 }
