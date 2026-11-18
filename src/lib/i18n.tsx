@@ -181,6 +181,10 @@ const dict = {
   copySummary: { fa: "کپی خلاصه سفارش", en: "Copy order summary" },
   copied: { fa: "کپی شد", en: "Copied" },
   orderFailed: { fa: "ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید.", en: "We couldn't place your order. Please try again." },
+  orderRateLimited: {
+    fa: "با این شماره موبایل در یک ساعت یا ۲۴ ساعت گذشته تعداد سفارش‌های مجاز ثبت شده است. لطفاً بعداً دوباره تلاش کنید.",
+    en: "The order limit for this mobile number has been reached. Please try again later.",
+  },
   backHome: { fa: "بازگشت به خانه", en: "Back to home" },
   nameRequired: { fa: "نام را وارد کنید.", en: "Enter your name." },
   nameTooLong: { fa: "نام بیش از حد طولانی است.", en: "Name is too long." },
