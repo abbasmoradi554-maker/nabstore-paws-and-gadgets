@@ -1,7 +1,6 @@
 name: Admin CMS build
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [feature/store-admin-cms]
 jobs:
