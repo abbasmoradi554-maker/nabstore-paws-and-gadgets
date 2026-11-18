@@ -35,6 +35,8 @@ export const orderItemSchema = z.object({
 export const orderInputSchema = z.object({
   customer: customerSchema,
   items: z.array(orderItemSchema).min(1).max(30),
+  // Hidden checkout honeypot; never shown to genuine customers.
+  honeypot: z.string().max(200).optional().default(""),
 });
 
 export type CustomerInput = z.input<typeof customerSchema>;

@@ -67,7 +67,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      place_order_with_rate_limit: {
+        Args: {
+          p_address: string
+          p_city: string
+          p_customer_name: string
+          p_items: Json
+          p_mobile: string
+          p_notes: string
+          p_order_code: string
+          p_postal_code: string
+          p_province: string
+          p_total_toman: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
