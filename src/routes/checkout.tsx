@@ -83,14 +83,17 @@ function Checkout() {
     }
     setPending(true);
     try {
+      const formElement = e.currentTarget;
+      const honeypot = String(new FormData(formElement).get("website") ?? "");
       const res = await submit({
-        data: { customer: parsed.data, items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })) },
+        data: { customer: parsed.data, items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })), honeypot },
       });
       setPlaced({ ...res, customer: parsed.data });
       cart.clear();
       window.scrollTo({ top: 0 });
-    } catch {
-      toast.error(t("orderFailed"));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : t("orderFailed"));
     } finally {
       setPending(false);
     }
@@ -124,6 +127,15 @@ function Checkout() {
       <h1 className="text-3xl font-bold">{t("checkoutTitle")}</h1>
       <div className="mt-8 grid gap-6 lg:grid-cols-5">
         <form onSubmit={onSubmit} noValidate className="grid gap-4 rounded-3xl border bg-card p-5 sm:grid-cols-2 sm:p-8 lg:col-span-3">
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            defaultValue=""
+            className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden"
+          />
           <FormField label={t("fName")} error={errors.name && t(errors.name)} className="sm:col-span-2">
             <input value={form.name} onChange={set("name")} autoComplete="name" maxLength={80} className={inputCls} />
           </FormField>
