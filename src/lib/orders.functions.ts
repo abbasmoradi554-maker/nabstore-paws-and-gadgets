@@ -20,8 +20,29 @@ export const placeOrder = createServerFn({ method: "POST" })
     } catch {
       throw new Error("invalid_items");
     }
+    // Reject automated submissions without revealing the honeypot to the client.
+    if (data.honeypot?.trim()) throw new Error("save_failed");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const c = data.customer;
+
+    // Database-backed limits work across Cloudflare Worker instances.
+    // Fail closed if the database cannot verify the counts.
+    const now = Date.now();
+    const [lastHour, lastDay] = await Promise.all([
+      supabaseAdmin.from("orders").select("id", { count: "exact", head: true })
+        .eq("mobile", c.mobile).gte("created_at", new Date(now - 60 * 60 * 1000).toISOString()),
+      supabaseAdmin.from("orders").select("id", { count: "exact", head: true })
+        .eq("mobile", c.mobile).gte("created_at", new Date(now - 24 * 60 * 60 * 1000).toISOString()),
+    ]);
+
+    if (lastHour.error || lastDay.error) {
+      console.error("placeOrder rate-limit lookup failed", lastHour.error?.message, lastDay.error?.message);
+      throw new Error("save_failed");
+    }
+    if ((lastHour.count ?? 0) >= 3 || (lastDay.count ?? 0) >= 10) {
+      throw new Error("rate_limited");
+    }
 
     for (let attempt = 0; attempt < 3; attempt++) {
       const code = makeOrderCode();
