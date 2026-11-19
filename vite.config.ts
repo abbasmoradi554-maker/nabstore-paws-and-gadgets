@@ -15,4 +15,11 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Nitro writes this into its generated .output/server/wrangler.json.
+  // Worker Previews require a top-level previews block; an empty block is valid.
+  cloudflare: {
+    wrangler: {
+      previews: {},
+    },
+  },
 });
