@@ -7,9 +7,9 @@ const option = z.object({ type: z.enum(["model", "color", "size", "design"]), va
 const spec = z.object({ label: localized, value: localized });
 const productInput = z.object({
   accessToken: token,
-  id: z.string().regex(/^[a-z0-9-]{2,80}$/),
+  id: z.string().regex(/^[a-z0-9-]{2,60}$/),
   name: localized,
-  price: z.number().int().min(0).max(1_000_000_000),
+  price: z.number().int().min(1).max(1_000_000_000),
   oldPrice: z.number().int().min(0).max(1_000_000_000).nullable(),
   category: z.enum(["phone-cases","food-water","toys","collars","hygiene","beds-carriers","gadgets"]),
   subcategory: z.string().max(80).nullable().optional(),
@@ -50,7 +50,7 @@ export const saveAdminProduct = createServerFn({ method: "POST" })
     return { product: row };
   });
 export const deleteAdminProduct = createServerFn({ method: "POST" })
-  .inputValidator((v: unknown) => z.object({ accessToken: token, id: z.string().regex(/^[a-z0-9-]{2,80}$/) }).parse(v))
+  .inputValidator((v: unknown) => z.object({ accessToken: token, id: z.string().regex(/^[a-z0-9-]{2,60}$/) }).parse(v))
   .handler(async ({ data }) => {
     const db = await admin(data.accessToken);
     const { error } = await (db as any).from("products").delete().eq("id", data.id);
