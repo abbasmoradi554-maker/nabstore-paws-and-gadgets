@@ -3,6 +3,8 @@ import { z } from "zod";
 
 const token = z.string().min(20).max(4096);
 const localized = z.object({ fa: z.string().trim().min(1).max(180), en: z.string().trim().min(1).max(180) });
+const option = z.object({ type: z.enum(["model", "color", "size", "design"]), values: z.array(localized).min(1).max(100) });
+const spec = z.object({ label: localized, value: localized });
 const productInput = z.object({
   accessToken: token,
   id: z.string().regex(/^[a-z0-9-]{2,80}$/),
@@ -10,8 +12,13 @@ const productInput = z.object({
   price: z.number().int().min(0).max(1_000_000_000),
   oldPrice: z.number().int().min(0).max(1_000_000_000).nullable(),
   category: z.enum(["phone-cases","food-water","toys","collars","hygiene","beds-carriers","gadgets"]),
+  subcategory: z.string().max(80).nullable().optional(),
   short: z.object({ fa: z.string().max(300), en: z.string().max(300) }),
   description: z.object({ fa: z.string().max(5000), en: z.string().max(5000) }),
+  specs: z.array(spec).max(100).default([]),
+  options: z.array(option).max(20).default([]),
+  tags: z.array(z.enum(["trending","pick","recommended"])).max(10).default([]),
+  addedOrder: z.number().int().min(0).max(1_000_000).default(0),
   images: z.array(z.string().url().max(2000)).max(8),
   active: z.boolean(),
 });
@@ -35,9 +42,9 @@ export const saveAdminProduct = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => productInput.parse(v))
   .handler(async ({ data }) => {
     const db = await admin(data.accessToken);
-    const { accessToken, oldPrice, ...rest } = data;
+    const { accessToken, oldPrice, addedOrder, ...rest } = data;
     const { data: row, error } = await (db as any).from("products").upsert({
-      ...rest, old_price: oldPrice, updated_at: new Date().toISOString(),
+      ...rest, old_price: oldPrice, added_order: addedOrder, updated_at: new Date().toISOString(),
     }).select("*").single();
     if (error) { console.error("saveAdminProduct", error.message); throw new Error("product_save_failed"); }
     return { product: row };
