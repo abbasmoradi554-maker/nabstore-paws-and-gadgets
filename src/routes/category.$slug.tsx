@@ -1,8 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { ProductGrid } from "@/components/site/ProductCard";
-import { getCategory, products } from "@/data/products";
+import { getCategory } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
+import { useCatalogProducts } from "@/lib/catalog";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: ({ params }) => {
@@ -38,7 +39,8 @@ function CategoryPage() {
   const { slug } = Route.useLoaderData();
   const { l, t, num } = useI18n();
   const category = getCategory(slug)!;
-  const list = products.filter((p) => p.category === slug);
+  const catalog = useCatalogProducts();
+  const list = (catalog.data ?? []).filter((p) => p.category === slug);
   return (
     <section className="container-page pt-8">
       <div className="flex items-center gap-5 rounded-3xl bg-primary-soft p-6 sm:p-8">
@@ -63,7 +65,7 @@ function CategoryPage() {
           )}
         </div>
       </div>
-      <ProductGrid products={list} className="mt-8" />
+      {catalog.isLoading ? <p className="mt-8 text-sm text-muted-foreground">در حال دریافت محصولات…</p> : <ProductGrid products={list} className="mt-8" />}
     </section>
   );
 }
