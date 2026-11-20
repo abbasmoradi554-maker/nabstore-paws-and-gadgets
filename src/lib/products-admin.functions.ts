@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const token = z.string().min(20).max(4096);
-const localized = z.object({ fa: z.string().trim().min(1).max(180), en: z.string().trim().min(1).max(180) });
+const localized = z.object({ fa: z.string().trim().min(1).max(180), en: z.string().trim().max(180) }).transform((v) => ({ ...v, en: v.en || v.fa }));
 const option = z.object({ type: z.enum(["model", "color", "size", "design"]), values: z.array(localized).min(1).max(100) });
 const spec = z.object({ label: localized, value: localized });
 const productInput = z.object({
@@ -13,8 +13,8 @@ const productInput = z.object({
   oldPrice: z.number().int().min(0).max(1_000_000_000).nullable(),
   category: z.enum(["phone-cases","food-water","toys","collars","hygiene","beds-carriers","gadgets"]),
   subcategory: z.string().max(80).nullable().optional(),
-  short: z.object({ fa: z.string().max(300), en: z.string().max(300) }),
-  description: z.object({ fa: z.string().max(5000), en: z.string().max(5000) }),
+  short: z.object({ fa: z.string().max(300), en: z.string().max(300) }).transform((v) => ({ ...v, en: v.en || v.fa })),
+  description: z.object({ fa: z.string().max(5000), en: z.string().max(5000) }).transform((v) => ({ ...v, en: v.en || v.fa })),
   specs: z.array(spec).max(100).default([]),
   options: z.array(option).max(20).default([]),
   tags: z.array(z.enum(["trending","pick","recommended"])).max(10).default([]),
