@@ -62,7 +62,8 @@ function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [busy, setBusy] = useState(false);\n  const [uploadingImage, setUploadingImage] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = async (token: string) => {
@@ -195,7 +196,7 @@ function AdminProductsPage() {
       const result = await uploadAdminProductImage({
         data: { accessToken, contentType: file.type as "image/jpeg" | "image/png" | "image/webp" | "image/avif", base64: btoa(binary) },
       });
-      setImagesText((current) => [...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), result.url].slice(0, 8).join("\\n"));
+      setImagesText((current) => [...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), result.url].slice(0, 8).join("\n"));
       toast.success("تصویر با موفقیت بارگذاری شد.");
     } catch {
       toast.error("بارگذاری تصویر انجام نشد؛ اتصال فضای ذخیره‌سازی را بررسی کنید.");
