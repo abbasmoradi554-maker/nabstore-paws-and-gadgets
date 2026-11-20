@@ -34,8 +34,10 @@ async function admin(accessToken: string) {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
-  const { data, error } = await db.auth.getUser(accessToken);
-  if (error || data.user?.email?.trim().toLowerCase() !== ADMIN_EMAIL) throw new Error("admin_forbidden");
+  // Verify the JWT through Supabase JWKS when supported; avoid an Auth API round-trip on every product operation.
+  const { data, error } = await db.auth.getClaims(accessToken);
+  const email = String(data?.claims?.email ?? "").trim().toLowerCase();
+  if (error || !data?.claims?.sub || email !== ADMIN_EMAIL) throw new Error("admin_forbidden");
   return db;
 }
 
