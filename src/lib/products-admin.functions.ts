@@ -57,3 +57,39 @@ export const deleteAdminProduct = createServerFn({ method: "POST" })
     if (error) throw new Error("product_delete_failed");
     return { success: true };
   });
+
+
+const imageUploadInput = z.object({
+  accessToken: token,
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"]),
+  base64: z.string().min(4).max(5_600_000).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+});
+
+export const uploadAdminProductImage = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) => imageUploadInput.parse(v))
+  .handler(async ({ data }) => {
+    const db = await admin(data.accessToken);
+    const binary = atob(data.base64);
+    if (binary.length === 0 || binary.length > 4 * 1024 * 1024) {
+      throw new Error("image_size_invalid");
+    }
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const extensionByType: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/avif": "avif",
+    };
+    const path = `products/${crypto.randomUUID()}.${extensionByType[data.contentType]}`;
+    const { error } = await db.storage.from("product-images").upload(path, bytes, {
+      contentType: data.contentType,
+      cacheControl: "31536000",
+      upsert: false,
+    });
+    if (error) {
+      console.error("uploadAdminProductImage", error.message);
+      throw new Error("product_image_upload_failed");
+    }
+    const { data: publicData } = db.storage.from("product-images").getPublicUrl(path);
+    return { url: publicData.publicUrl };
+  });
