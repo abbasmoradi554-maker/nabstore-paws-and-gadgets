@@ -29,6 +29,7 @@ type Order = {
 };
 
 const statusLabels: Record<string, string> = {
+  pending_review: "در انتظار بررسی",
   pending: "در انتظار بررسی",
   confirmed: "تأیید شده",
   processing: "در حال آماده‌سازی",
