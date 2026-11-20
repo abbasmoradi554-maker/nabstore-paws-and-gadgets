@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { orderInputSchema } from "./order-schema";
-import { priceOrder } from "./order-pricing";
 import type { Json } from "@/integrations/supabase/types";
 
 function makeOrderCode() {
@@ -10,18 +9,41 @@ function makeOrderCode() {
   return `NB-${String((buf[0] ?? 0) % 100000000).padStart(8, "0")}`;
 }
 
-/**
- * Reprice against the database on the server whenever a product row exists.
- * Static sample data is a temporary fallback until the real catalog is migrated.
- * The browser never supplies a trusted price, and inactive DB products are rejected.
- */
-async function priceOrderFromCatalog(items: Parameters<typeof priceOrder>[0]) {
-  const base = priceOrder(items);
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+type Localized = { fa: string; en: string };
+type CatalogOption = { type: string; values: Localized[] };
+
+function normalizeCatalogOptions(options: CatalogOption[], selected: Record<string, string>) {
+  const normalized: Record<string, string> = {};
+  for (const option of options) {
+    if (!option || typeof option.type !== "string" || !Array.isArray(option.values)) {
+      throw new Error("invalid_catalog_product");
+    }
+    const chosen = selected[option.type];
+    const match = option.values.find((v) => v && typeof v.fa === "string" && v.fa === chosen);
+    if (chosen && !match) throw new Error("invalid_option");
+    const fallback = option.values[0];
+    if (!match && !fallback?.fa) throw new Error("invalid_catalog_product");
+    normalized[option.type] = match?.fa ?? fallback.fa;
+  }
+  if (Object.keys(selected).some((key) => !options.some((option) => option.type === key))) {
+    throw new Error("invalid_option");
+  }
+  return normalized;
+}
+
+/** All product identity, option validation and pricing come exclusively from active DB rows. */
+async function priceOrderFromCatalog(items: Array<{ id: string; qty: number; options: Record<string, string> }>) {
+  if (!items.length || items.length > 30) throw new Error("invalid_items");
   const ids = [...new Set(items.map((item) => item.id))];
+  if (ids.length !== items.length && items.length > 1) {
+    // Duplicate product lines are allowed; IDs are deduplicated for the lookup.
+  }
+  if (ids.some((id) => typeof id !== "string" || !/^[a-z0-9-]{2,80}$/.test(id))) throw new Error("invalid_items");
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: rows, error } = await (supabaseAdmin as any)
     .from("products")
-    .select("id,name,price,active")
+    .select("id,name,price,active,options")
     .in("id", ids);
 
   if (error) {
@@ -30,32 +52,27 @@ async function priceOrderFromCatalog(items: Parameters<typeof priceOrder>[0]) {
   }
 
   const byId = new Map<string, any>((rows ?? []).map((row: any) => [row.id, row]));
-  const lines = base.lines.map((line) => {
-    const row = byId.get(line.id);
-    if (!row) throw new Error("product_not_in_catalog");
-    if (row.active !== true || !Number.isSafeInteger(row.price) || row.price < 0) {
-      throw new Error("invalid_catalog_product");
-    }
-    const nameFa = typeof row.name?.fa === "string" && row.name.fa.trim()
-      ? row.name.fa.trim()
-      : line.nameFa;
-    return {
-      ...line,
-      nameFa,
-      unitPrice: row.price,
-      lineTotal: row.price * line.qty,
-    };
+  const lines = items.map((item) => {
+    const row = byId.get(item.id);
+    if (!row || row.active !== true) throw new Error("product_not_available");
+    if (!Number.isSafeInteger(row.price) || row.price < 0) throw new Error("invalid_catalog_product");
+    const qty = Number.isSafeInteger(item.qty) ? Math.max(1, Math.min(20, item.qty)) : 0;
+    if (!qty) throw new Error("invalid_items");
+    const options = normalizeCatalogOptions((row.options ?? []) as CatalogOption[], item.options ?? {});
+    const nameFa = typeof row.name?.fa === "string" && row.name.fa.trim() ? row.name.fa.trim() : "";
+    if (!nameFa) throw new Error("invalid_catalog_product");
+    const lineTotal = row.price * qty;
+    if (!Number.isSafeInteger(lineTotal)) throw new Error("invalid_catalog_product");
+    return { id: row.id, nameFa, qty, options, unitPrice: row.price, lineTotal };
   });
-
-  return { lines, total: lines.reduce((sum, line) => sum + line.lineTotal, 0) };
+  const total = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+  if (!Number.isSafeInteger(total) || total <= 0) throw new Error("invalid_items");
+  return { lines, total };
 }
 
-// Public endpoint: anyone can place an order. Input is validated with zod;
-// every price is recalculated on the server from the database when available.
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderInputSchema.parse(input))
   .handler(async ({ data }) => {
-    // Reject automated submissions without revealing the honeypot to the client.
     if (data.honeypot?.trim()) throw new Error("save_failed");
 
     let priced: Awaited<ReturnType<typeof priceOrderFromCatalog>>;
@@ -69,9 +86,6 @@ export const placeOrder = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const c = data.customer;
 
-    // The database function takes a per-mobile advisory transaction lock,
-    // checks both windows, and inserts the order in the same transaction.
-    // This is atomic across Cloudflare Worker instances.
     for (let attempt = 0; attempt < 3; attempt++) {
       const code = makeOrderCode();
       const { error } = await supabaseAdmin.rpc("place_order_with_rate_limit", {
@@ -86,7 +100,6 @@ export const placeOrder = createServerFn({ method: "POST" })
         p_items: priced.lines as unknown as Json,
         p_total_toman: priced.total,
       });
-
       if (!error) return { code, lines: priced.lines, total: priced.total };
       if (error.message.includes("rate_limited")) throw new Error("rate_limited");
       if (error.code !== "23505") {
