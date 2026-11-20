@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getProduct } from "@/data/products";
+import { useCatalogProducts } from "@/lib/catalog";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const { t, l, price, num } = useI18n();
   const cart = useCart();
+  const catalog = useCatalogProducts();
 
   if (!cart.ready) return <section className="container-page min-h-[40vh] pt-10" />;
 
@@ -48,7 +49,7 @@ function CartPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <ul className="grid gap-3 lg:col-span-2">
           {cart.items.map((item) => {
-            const p = getProduct(item.id);
+            const p = catalog.data?.find((product) => product.id === item.id);
             if (!p) return null;
             const opts = p.options
               .map((o) => o.values.find((v) => v.fa === item.options[o.type]))
