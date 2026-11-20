@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
-import { LoaderCircle, LogOut, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
+  Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,35 +13,322 @@ export const Route = createFileRoute("/admin/products")({
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
   component: AdminProductsPage,
 });
-type Product = { id:string; name:{fa:string;en:string}; price:number; old_price:number|null; category:string; subcategory:string|null; short:{fa:string;en:string}; description:{fa:string;en:string}; specs:Array<{label:{fa:string;en:string};value:{fa:string;en:string}}>; options:Array<{type:"model"|"color"|"size"|"design";values:Array<{fa:string;en:string}>}>; tags:Array<"trending"|"pick"|"recommended">; added_order:number; images:string[]; active:boolean };
-const categories = [["phone-cases","قاب و لوازم جانبی"],["food-water","غذا و آبخوری"],["toys","اسباب‌بازی"],["collars","قلاده و اکسسوری"],["hygiene","بهداشت"],["beds-carriers","تخت و حمل"],["gadgets","گجت‌ها"]];
-const blank = (): Product => ({id:"",name:{fa:"",en:""},price:0,old_price:null,category:"phone-cases",subcategory:null,short:{fa:"",en:""},description:{fa:"",en:""},specs:[],options:[],tags:[],added_order:0,images:[],active:true});
+
+type Localized = { fa: string; en: string };
+type Product = {
+  id: string; name: Localized; price: number; old_price: number | null;
+  category: string; subcategory: string | null; short: Localized; description: Localized;
+  specs: Array<{ label: Localized; value: Localized }>;
+  options: Array<{ type: "model" | "color" | "size" | "design"; values: Localized[] }>;
+  tags: Array<"trending" | "pick" | "recommended">;
+  added_order: number; images: string[]; active: boolean;
+};
+
+const categories = [
+  ["phone-cases", "قاب و لوازم جانبی"], ["food-water", "غذا و آبخوری"],
+  ["toys", "اسباب‌بازی"], ["collars", "قلاده و اکسسوری"],
+  ["hygiene", "بهداشت"], ["beds-carriers", "تخت و حمل"], ["gadgets", "گجت‌ها"],
+];
+const tagLabels: Record<string, string> = {
+  trending: "ترند", pick: "انتخاب ناب", recommended: "پیشنهادی",
+};
+const blank = (): Product => ({
+  id: "", name: { fa: "", en: "" }, price: 1, old_price: null,
+  category: "phone-cases", subcategory: null,
+  short: { fa: "", en: "" }, description: { fa: "", en: "" },
+  specs: [], options: [], tags: [], added_order: 0, images: [], active: true,
+});
+const inputClass = "h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
+const areaClass = "w-full rounded-xl border border-input bg-background p-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
+
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return <label className="grid min-w-0 gap-1.5 text-sm font-medium"><span>{label}</span>{children}{hint ? <span className="text-xs font-normal text-muted-foreground">{hint}</span> : null}</label>;
+}
+function formatMoney(value: number) {
+  return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
+}
+
 function AdminProductsPage() {
- const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [accessToken,setAccessToken]=useState("");
- const [items,setItems]=useState<Product[]>([]); const [draft,setDraft]=useState<Product>(blank()); const [specsJson,setSpecsJson]=useState("[]"); const [optionsJson,setOptionsJson]=useState("[]"); const [tagsText,setTagsText]=useState(""); const [subcategory,setSubcategory]=useState(""); const [imagesText,setImagesText]=useState(""); const [busy,setBusy]=useState(false);
- const load=async(t:string)=>{const r=await listAdminProducts({data:{accessToken:t}});setItems(r.products as Product[]);};
- useEffect(()=>{let live=true;void(async()=>{const {data}=await supabase.auth.getSession();if(data.session?.access_token){try{await listAdminProducts({data:{accessToken:data.session.access_token}});if(live){setAccessToken(data.session.access_token);await load(data.session.access_token);}}catch{await supabase.auth.signOut();}}})();return()=>{live=false;};},[]);
- const login=async(e:FormEvent)=>{e.preventDefault();setBusy(true);try{const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error||!data.session)throw error??new Error();setAccessToken(data.session.access_token);await load(data.session.access_token);setPassword("");toast.success("وارد شدید");}catch{toast.error("ورود ناموفق بود؛ تنظیم ADMIN_EMAIL و حساب مدیر را بررسی کنید");}finally{setBusy(false);}};
- const save=async(e:FormEvent)=>{e.preventDefault();if(!accessToken)return;setBusy(true);try{const specs=JSON.parse(specsJson);const options=JSON.parse(optionsJson);const tags=tagsText.split(",").map(x=>x.trim()).filter(Boolean);const images=imagesText.split(/[\n,]/).map(x=>x.trim()).filter(Boolean);if(!Array.isArray(specs)||!Array.isArray(options)||!Array.isArray(tags))throw new Error("invalid_json");await saveAdminProduct({data:{accessToken,...draft,oldPrice:draft.old_price,subcategory:subcategory.trim()||null,specs,options,tags,images,addedOrder:draft.added_order||0}});await load(accessToken);setDraft(blank());setSpecsJson("[]");setOptionsJson("[]");setTagsText("");setSubcategory("");setImagesText("");toast.success("محصول ذخیره شد");}catch{toast.error("ذخیره انجام نشد؛ قالب JSON مشخصات و گزینه‌ها یا مقادیر برچسب‌ها را بررسی کنید");}finally{setBusy(false);}};
- const edit=(p:Product)=>{setDraft({...p,images:p.images??[]});setSpecsJson(JSON.stringify(p.specs??[],null,2));setOptionsJson(JSON.stringify(p.options??[],null,2));setTagsText((p.tags??[]).join(", "));setSubcategory(p.subcategory??"");setImagesText((p.images??[]).join("\n"));};
- const remove=async(id:string)=>{if(!confirm("این محصول از فهرست مدیریتی حذف شود؟"))return;try{await deleteAdminProduct({data:{accessToken,id}});await load(accessToken);toast.success("محصول حذف شد");}catch{toast.error("حذف محصول انجام نشد");}};
- const logout=async()=>{await supabase.auth.signOut();setAccessToken("");setItems([]);};
- if(!accessToken)return <main className="container-page max-w-lg py-12"><form onSubmit={login} className="grid gap-4 rounded-3xl border bg-card p-7"><h1 className="text-2xl font-bold">ورود مدیر ناب‌استور</h1><label className="grid gap-2 text-sm">ایمیل<input required type="email" dir="ltr" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 rounded-xl border bg-background px-3"/></label><label className="grid gap-2 text-sm">رمز عبور<input required type="password" value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-3"/></label><Button disabled={busy}>{busy?<LoaderCircle className="animate-spin"/>:"ورود به مدیریت محصولات"}</Button><a className="text-sm text-primary underline" href="/admin">مدیریت سفارش‌ها</a></form></main>;
- return <main className="container-page max-w-6xl py-8"><header className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">مدیریت محصولات</h1><p className="text-sm text-muted-foreground">افزودن، ویرایش قیمت و مشخصات محصولات</p></div><div className="flex gap-2"><Button variant="outline" onClick={()=>void load(accessToken)}><RefreshCw/> تازه‌سازی</Button><Button variant="ghost" onClick={()=>void logout()}><LogOut/> خروج</Button></div></header>
- <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]"><form onSubmit={save} className="grid content-start gap-3 rounded-2xl border bg-card p-5"><h2 className="font-bold">{draft.id?"ویرایش محصول":"محصول جدید"}</h2>
- <label className="grid gap-1 text-sm">شناسه انگلیسی (بدون فاصله)<input required pattern="[a-z0-9-]{2,60}" maxLength={60} value={draft.id} disabled={items.some(p=>p.id===draft.id)} onChange={e=>setDraft({...draft,id:e.target.value})} className="h-10 rounded-lg border bg-background px-3" dir="ltr"/></label>
- <label className="grid gap-1 text-sm">نام فارسی<input required value={draft.name.fa} onChange={e=>setDraft({...draft,name:{...draft.name,fa:e.target.value}})} className="h-10 rounded-lg border bg-background px-3"/></label>
- <label className="grid gap-1 text-sm">نام انگلیسی<input required value={draft.name.en} onChange={e=>setDraft({...draft,name:{...draft.name,en:e.target.value}})} className="h-10 rounded-lg border bg-background px-3" dir="ltr"/></label>
- <div className="grid grid-cols-2 gap-2"><label className="grid gap-1 text-sm">قیمت (تومان)<input required type="number" min="1" value={draft.price} onChange={e=>setDraft({...draft,price:Number(e.target.value)})} className="h-10 rounded-lg border bg-background px-3"/></label><label className="grid gap-1 text-sm">قیمت قبلی<input type="number" min="0" value={draft.old_price??""} onChange={e=>setDraft({...draft,old_price:e.target.value===""?null:Number(e.target.value)})} className="h-10 rounded-lg border bg-background px-3"/></label></div>
- <label className="grid gap-1 text-sm">زیردسته (شناسه انگلیسی)<input value={subcategory} onChange={e=>setSubcategory(e.target.value)} className="h-10 rounded-lg border bg-background px-3" dir="ltr" placeholder="مثلاً cat-toys"/></label>
- <label className="grid gap-1 text-sm">دسته‌بندی<select value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})} className="h-10 rounded-lg border bg-background px-3">{categories.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
- <label className="grid gap-1 text-sm">توضیح کوتاه فارسی<textarea value={draft.short.fa} onChange={e=>setDraft({...draft,short:{...draft.short,fa:e.target.value}})} className="rounded-lg border bg-background p-3"/></label>
- <label className="grid gap-1 text-sm">توضیح کامل فارسی<textarea value={draft.description.fa} onChange={e=>setDraft({...draft,description:{...draft.description,fa:e.target.value}})} className="min-h-24 rounded-lg border bg-background p-3"/></label>
- <label className="grid gap-1 text-sm">مشخصات محصول (JSON)<textarea value={specsJson} onChange={e=>setSpecsJson(e.target.value)} rows={5} dir="ltr" className="rounded-lg border bg-background p-3 font-mono text-xs" placeholder='[{"label":{"fa":"جنس","en":"Material"},"value":{"fa":"سیلیکون","en":"Silicone"}}]'/></label>
- <label className="grid gap-1 text-sm">گزینه‌های انتخابی (JSON)<textarea value={optionsJson} onChange={e=>setOptionsJson(e.target.value)} rows={6} dir="ltr" className="rounded-lg border bg-background p-3 font-mono text-xs" placeholder='[{"type":"color","values":[{"fa":"مشکی","en":"Black"},{"fa":"سفید","en":"White"}]}]'/></label>
- <label className="grid gap-1 text-sm">برچسب‌ها (trending, pick, recommended)<input value={tagsText} onChange={e=>setTagsText(e.target.value)} className="h-10 rounded-lg border bg-background px-3" dir="ltr" placeholder="trending, pick"/></label>
- <label className="grid gap-1 text-sm">آدرس تصاویر (هر خط یک URL، حداکثر ۸ تصویر)<textarea value={imagesText} onChange={e=>setImagesText(e.target.value)} rows={4} className="rounded-lg border bg-background p-3" dir="ltr" placeholder="https://..."/></label>
- <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.active} onChange={e=>setDraft({...draft,active:e.target.checked})}/> فعال در کاتالوگ</label>
- <div className="flex gap-2"><Button disabled={busy} type="submit"><Save/> ذخیره محصول</Button><Button type="button" variant="outline" onClick={()=>{setDraft(blank());setSpecsJson("[]");setOptionsJson("[]");setTagsText("");setSubcategory("");setImagesText("");}}>پاک‌کردن فرم</Button></div></form>
- <section className="rounded-2xl border bg-card p-5"><div className="mb-4 flex items-center justify-between"><h2 className="font-bold">فهرست محصولات ثبت‌شده</h2><span className="text-sm text-muted-foreground">{items.length} محصول</span></div><div className="grid gap-2">{items.map(p=><article key={p.id} className="flex items-center justify-between gap-3 rounded-xl border p-3"><div className="min-w-0"><p className="truncate font-semibold">{p.name?.fa||p.id}</p><p className="text-xs text-muted-foreground">{new Intl.NumberFormat("fa-IR").format(p.price)} تومان · {p.active?"فعال":"غیرفعال"}</p></div><div className="flex shrink-0 gap-1"><Button size="sm" variant="outline" onClick={()=>edit(p)}>ویرایش</Button><Button size="icon" variant="ghost" aria-label="حذف" onClick={()=>void remove(p.id)}><Trash2 className="size-4"/></Button></div></article>)}{!items.length&&<p className="py-10 text-center text-sm text-muted-foreground">هنوز محصولی در دیتابیس ثبت نشده است.</p>}</div></section></div></main>;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [items, setItems] = useState<Product[]>([]);
+  const [draft, setDraft] = useState<Product>(blank());
+  const [specsJson, setSpecsJson] = useState("[]");
+  const [optionsJson, setOptionsJson] = useState("[]");
+  const [tagsText, setTagsText] = useState("");
+  const [subcategory, setSubcategory] = useState("");
+  const [imagesText, setImagesText] = useState("");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const load = async (token: string) => {
+    const result = await listAdminProducts({ data: { accessToken: token } });
+    setItems(result.products as Product[]);
+  };
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (token) {
+          await listAdminProducts({ data: { accessToken: token } });
+          if (live) {
+            setAccessToken(token);
+            await load(token);
+          }
+        }
+      } catch {
+        await supabase.auth.signOut();
+      } finally {
+        if (live) setLoading(false);
+      }
+    })();
+    return () => { live = false; };
+  }, []);
+
+  const visibleItems = useMemo(() => {
+    const q = search.trim().toLocaleLowerCase();
+    return items.filter((p) => {
+      const matchesText = !q || [p.id, p.name?.fa, p.name?.en].some((v) => (v ?? "").toLocaleLowerCase().includes(q));
+      const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
+      const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? p.active : !p.active);
+      return matchesText && matchesCategory && matchesStatus;
+    }).sort((a, b) => b.added_order - a.added_order);
+  }, [items, search, categoryFilter, statusFilter]);
+
+  const activeCount = items.filter((p) => p.active).length;
+  const inactiveCount = items.length - activeCount;
+
+  const clearForm = () => {
+    setDraft(blank());
+    setSpecsJson("[]");
+    setOptionsJson("[]");
+    setTagsText("");
+    setSubcategory("");
+    setImagesText("");
+  };
+
+  const login = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error || !data.session) throw error ?? new Error("login_failed");
+      await load(data.session.access_token);
+      setAccessToken(data.session.access_token);
+      setPassword("");
+      toast.success("با موفقیت وارد پنل مدیریت شدید");
+    } catch {
+      await supabase.auth.signOut();
+      toast.error("ورود ناموفق بود؛ ایمیل مدیر و حساب کاربری تأییدشده را بررسی کنید.");
+    } finally {
+      setBusy(false);
+      setLoading(false);
+    }
+  };
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!accessToken) return;
+    setBusy(true);
+    try {
+      const specs = JSON.parse(specsJson);
+      const options = JSON.parse(optionsJson);
+      const tags = [...new Set(tagsText.split(",").map((value) => value.trim()).filter(Boolean))];
+      const images = [...new Set(imagesText.split(/[\n,]/).map((value) => value.trim()).filter(Boolean))];
+      if (!Array.isArray(specs) || !Array.isArray(options) || images.length > 8) throw new Error("invalid_fields");
+      if (draft.old_price !== null && draft.old_price <= draft.price) {
+        throw new Error("old_price_must_exceed_price");
+      }
+      await saveAdminProduct({
+        data: {
+          accessToken, ...draft, oldPrice: draft.old_price,
+          subcategory: subcategory.trim() || null, specs, options, tags, images,
+          addedOrder: draft.added_order || 0,
+        },
+      });
+      await load(accessToken);
+      clearForm();
+      toast.success("محصول با موفقیت ذخیره شد");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message === "old_price_must_exceed_price") toast.error("قیمت قبلی باید از قیمت فروش بیشتر باشد.");
+      else if (message.includes("JSON")) toast.error("ساختار JSON مشخصات یا گزینه‌ها معتبر نیست.");
+      else toast.error("ذخیره انجام نشد؛ شناسه، قیمت، آدرس تصاویر و قالب مشخصات را بررسی کنید.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const edit = (product: Product) => {
+    setDraft({ ...product, images: product.images ?? [] });
+    setSpecsJson(JSON.stringify(product.specs ?? [], null, 2));
+    setOptionsJson(JSON.stringify(product.options ?? [], null, 2));
+    setTagsText((product.tags ?? []).join(", "));
+    setSubcategory(product.subcategory ?? "");
+    setImagesText((product.images ?? []).join("\n"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const remove = async (id: string) => {
+    if (!window.confirm("این محصول برای همیشه از فهرست محصولات حذف شود؟")) return;
+    try {
+      await deleteAdminProduct({ data: { accessToken, id } });
+      await load(accessToken);
+      if (draft.id === id) clearForm();
+      toast.success("محصول حذف شد");
+    } catch {
+      toast.error("حذف محصول انجام نشد.");
+    }
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setAccessToken("");
+    setItems([]);
+    clearForm();
+  };
+
+  if (loading) {
+    return <main className="container-page flex min-h-[55vh] items-center justify-center"><LoaderCircle className="size-8 animate-spin text-primary" /></main>;
+  }
+
+  if (!accessToken) {
+    return (
+      <main className="container-page flex min-h-[65vh] max-w-lg items-center justify-center py-12">
+        <form onSubmit={login} className="grid w-full gap-5 rounded-3xl border bg-card p-7 shadow-sm sm:p-9">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary"><ShieldCheck className="size-7" /></div>
+          <div className="text-center"><h1 className="text-2xl font-extrabold">مدیریت ناب استور</h1><p className="mt-2 text-sm text-muted-foreground">برای ورود به پنل خصوصی فروشگاه وارد شوید.</p></div>
+          <Field label="ایمیل مدیر"><input required type="email" autoComplete="username" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
+          <Field label="رمز عبور"><input required type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} /></Field>
+          <Button type="submit" size="lg" disabled={busy}>{busy ? <LoaderCircle className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} ورود امن به پنل</Button>
+          <a className="text-center text-sm text-primary underline underline-offset-4" href="/admin">رفتن به مدیریت سفارش‌ها</a>
+          <p className="text-center text-xs leading-6 text-muted-foreground">دسترسی فقط برای ایمیل مدیر ثبت‌شده در تنظیمات امن سرور مجاز است.</p>
+        </form>
+      </main>
+    );
+  }
+
+  return (
+    <main className="container-page max-w-7xl py-8">
+      <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Package className="size-6" /></div>
+          <div><h1 className="text-2xl font-extrabold sm:text-3xl">مدیریت محصولات</h1><p className="mt-1 text-sm text-muted-foreground">کاتالوگ، قیمت، تصاویر و مشخصات NABSTORE</p></div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline"><a href="/admin">مدیریت سفارش‌ها</a></Button>
+          <Button type="button" variant="outline" onClick={() => void load(accessToken)} disabled={busy}><RefreshCw className="size-4" /> تازه‌سازی</Button>
+          <Button type="button" variant="ghost" onClick={() => void logout()}><LogOut className="size-4" /> خروج</Button>
+        </div>
+      </header>
+
+      <section className="mb-6 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border bg-card p-4"><p className="text-sm text-muted-foreground">کل محصولات</p><p className="mt-1 text-2xl font-extrabold tabular-nums">{new Intl.NumberFormat("fa-IR").format(items.length)}</p></div>
+        <div className="rounded-2xl border bg-card p-4"><p className="flex items-center gap-2 text-sm text-muted-foreground"><CheckCircle2 className="size-4 text-emerald-600" /> محصولات فعال</p><p className="mt-1 text-2xl font-extrabold tabular-nums">{new Intl.NumberFormat("fa-IR").format(activeCount)}</p></div>
+        <div className="rounded-2xl border bg-card p-4"><p className="flex items-center gap-2 text-sm text-muted-foreground"><EyeOff className="size-4" /> محصولات غیرفعال</p><p className="mt-1 text-2xl font-extrabold tabular-nums">{new Intl.NumberFormat("fa-IR").format(inactiveCount)}</p></div>
+      </section>
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)]">
+        <form onSubmit={save} className="grid content-start gap-4 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between gap-3 border-b pb-4">
+            <div><h2 className="text-lg font-bold">{draft.id ? "ویرایش محصول" : "ثبت محصول جدید"}</h2><p className="mt-1 text-xs text-muted-foreground">اطلاعات را دقیق و مطابق کالای واقعی وارد کنید.</p></div>
+            {draft.id ? <Button type="button" size="sm" variant="ghost" onClick={clearForm}><X className="size-4" /> انصراف از ویرایش</Button> : <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">محصول جدید</span>}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="شناسه انگلیسی محصول" hint="فقط حروف کوچک انگلیسی، عدد و خط تیره">
+              <input required pattern="[a-z0-9-]{2,60}" maxLength={60} value={draft.id} disabled={items.some((p) => p.id === draft.id)} onChange={(e) => setDraft({ ...draft, id: e.target.value })} className={inputClass} dir="ltr" placeholder="مثلاً cat-water-bowl" />
+            </Field>
+            <Field label="دسته‌بندی">
+              <select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className={inputClass}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="نام فارسی"><input required maxLength={180} value={draft.name.fa} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, fa: e.target.value } })} className={inputClass} /></Field>
+            <Field label="نام انگلیسی"><input maxLength={180} dir="ltr" value={draft.name.en} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, en: e.target.value } })} className={inputClass} /></Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="قیمت فروش (تومان)"><input required type="number" min="1" max="1000000000" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className={inputClass} /></Field>
+            <Field label="قیمت قبلی (اختیاری)"><input type="number" min="0" max="1000000000" value={draft.old_price ?? ""} onChange={(e) => setDraft({ ...draft, old_price: e.target.value === "" ? null : Number(e.target.value) })} className={inputClass} /></Field>
+            <Field label="ترتیب نمایش"><input type="number" min="0" value={draft.added_order} onChange={(e) => setDraft({ ...draft, added_order: Number(e.target.value) })} className={inputClass} /></Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="زیردسته"><input maxLength={80} value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className={inputClass} placeholder="مثلاً ظرف آب اتوماتیک" /></Field>
+            <Field label="برچسب‌ها" hint="با ویرگول انگلیسی جدا کنید: trending, pick, recommended"><input value={tagsText} onChange={(e) => setTagsText(e.target.value)} className={inputClass} dir="ltr" placeholder="trending, pick" /></Field>
+          </div>
+
+          <div className="grid gap-3 rounded-2xl bg-muted/35 p-4">
+            <p className="text-sm font-bold">معرفی محصول</p>
+            <Field label="توضیح کوتاه فارسی"><textarea required maxLength={300} rows={2} value={draft.short.fa} onChange={(e) => setDraft({ ...draft, short: { ...draft.short, fa: e.target.value } })} className={areaClass} /></Field>
+            <Field label="توضیح کوتاه انگلیسی"><textarea maxLength={300} rows={2} dir="ltr" value={draft.short.en} onChange={(e) => setDraft({ ...draft, short: { ...draft.short, en: e.target.value } })} className={areaClass} /></Field>
+            <Field label="توضیحات کامل فارسی"><textarea required maxLength={5000} rows={4} value={draft.description.fa} onChange={(e) => setDraft({ ...draft, description: { ...draft.description, fa: e.target.value } })} className={areaClass} /></Field>
+            <Field label="توضیحات کامل انگلیسی"><textarea maxLength={5000} rows={4} dir="ltr" value={draft.description.en} onChange={(e) => setDraft({ ...draft, description: { ...draft.description, en: e.target.value } })} className={areaClass} /></Field>
+          </div>
+
+          <Field label="مشخصات فنی (JSON)" hint='نمونه: [{"label":{"fa":"جنس","en":"Material"},"value":{"fa":"استیل","en":"Steel"}}]'>
+            <textarea value={specsJson} onChange={(e) => setSpecsJson(e.target.value)} rows={5} dir="ltr" spellCheck={false} className={areaClass + " font-mono text-xs"} />
+          </Field>
+          <Field label="گزینه‌های قابل انتخاب (JSON)" hint='نوع گزینه: model، color، size یا design'>
+            <textarea value={optionsJson} onChange={(e) => setOptionsJson(e.target.value)} rows={5} dir="ltr" spellCheck={false} className={areaClass + " font-mono text-xs"} />
+          </Field>
+          <Field label="آدرس تصاویر محصول" hint="هر خط یک لینک مستقیم تصویر؛ حداکثر ۸ تصویر. بارگذاری فایل مستقیم هنوز فعال نشده است.">
+            <textarea value={imagesText} onChange={(e) => setImagesText(e.target.value)} rows={4} dir="ltr" className={areaClass} placeholder="https://example.com/product-image.webp" />
+          </Field>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="size-4 accent-primary" /> نمایش محصول در فروشگاه</label>
+            <span className="text-xs text-muted-foreground">{imagesText.split(/[\n,]/).filter((v) => v.trim()).length} از ۸ تصویر</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" disabled={busy} className="flex-1 sm:flex-none">{busy ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}{draft.id ? "ذخیره تغییرات" : "ثبت محصول"}</Button>
+            <Button type="button" variant="outline" onClick={clearForm}>پاک‌کردن فرم</Button>
+          </div>
+        </form>
+
+        <section className="min-w-0 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div><h2 className="text-lg font-bold">فهرست محصولات</h2><p className="mt-1 text-xs text-muted-foreground">مدیریت محصولات ثبت‌شده در پایگاه داده</p></div>
+            <Button type="button" size="sm" onClick={clearForm}><Plus className="size-4" /> محصول جدید</Button>
+          </div>
+          <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr]">
+            <div className="relative sm:col-span-3"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} className={inputClass + " pr-9"} placeholder="جست‌وجوی نام یا شناسه محصول..." /></div>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={inputClass}><option value="all">همه دسته‌ها</option>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={inputClass}><option value="all">همه وضعیت‌ها</option><option value="active">فعال</option><option value="inactive">غیرفعال</option></select>
+            <div className="flex items-center justify-center rounded-xl bg-muted/50 px-3 text-xs text-muted-foreground">{visibleItems.length} مورد</div>
+          </div>
+
+          <div className="grid gap-3">
+            {visibleItems.map((product) => (
+              <article key={product.id} className="flex min-w-0 gap-3 rounded-2xl border p-3 transition hover:border-primary/40">
+                <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted">
+                  {product.images?.[0] ? <img src={product.images[0]} alt={product.name?.fa ?? ""} loading="lazy" className="size-full object-cover" /> : <ImagePlus className="size-6 text-muted-foreground" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2"><p className="truncate font-bold">{product.name?.fa || product.id}</p><span className={product.active ? "rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-700" : "rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"}>{product.active ? "فعال" : "غیرفعال"}</span></div>
+                  <p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{product.id}</p>
+                  <p className="mt-2 text-sm font-semibold">{formatMoney(product.price)}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">{(product.tags ?? []).map((tag) => <span key={tag} className="rounded-md bg-primary/8 px-2 py-0.5 text-[10px] text-primary">{tagLabels[tag] ?? tag}</span>)}</div>
+                </div>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <Button type="button" size="sm" variant="outline" onClick={() => edit(product)}><Eye className="size-3.5" /> ویرایش</Button>
+                  <Button type="button" size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => void remove(product.id)}><Trash2 className="size-3.5" /> حذف</Button>
+                </div>
+              </article>
+            ))}
+            {visibleItems.length === 0 && (
+              <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed p-6 text-center">
+                <div><Package className="mx-auto size-9 text-muted-foreground" /><p className="mt-3 font-semibold">{items.length ? "محصولی با این فیلتر پیدا نشد" : "هنوز محصولی ثبت نشده است"}</p><p className="mt-1 text-sm text-muted-foreground">{items.length ? "عبارت جست‌وجو یا فیلترها را تغییر دهید." : "اولین کالای واقعی فروشگاه را از فرم کنار صفحه ثبت کنید."}</p></div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }
