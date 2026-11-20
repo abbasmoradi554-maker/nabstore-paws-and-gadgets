@@ -5,7 +5,6 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { getProduct } from "@/data/products";
 import { useCart } from "@/lib/cart";
 import { formatNumber, useI18n, type DictKey } from "@/lib/i18n";
 import { customerSchema, provinces, type CustomerInput } from "@/lib/order-schema";
@@ -84,9 +83,13 @@ function Checkout() {
     setPending(true);
     try {
       const res = await submit({
-        data: { customer: parsed.data, items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })) },
+        data: { customer: parsed.data, items: cart.lines.map(({ id, qty, options }) => ({ id, qty, options })) },
       });
-      setPlaced({ ...res, customer: parsed.data });
+      if (!res.ok) {
+        toast.error(t(res.error === "unavailable" ? "orderUnavailable" : res.error === "invalid" ? "orderInvalid" : "orderFailed"));
+        return;
+      }
+      setPlaced({ code: res.code, lines: res.lines, total: res.total, customer: parsed.data });
       cart.clear();
       window.scrollTo({ top: 0 });
     } catch {
@@ -108,7 +111,7 @@ function Checkout() {
 
   if (!cart.ready) return <section className="container-page min-h-[40vh] pt-10" />;
 
-  if (cart.items.length === 0) {
+  if (cart.lines.length === 0) {
     return (
       <section className="container-page pt-10 text-center">
         <p className="text-muted-foreground">{t("cartEmpty")}</p>
@@ -161,9 +164,8 @@ function Checkout() {
         <aside className="h-fit rounded-3xl border bg-card p-5 sm:p-6 lg:col-span-2">
           <h2 className="font-bold">{t("orderSummary")}</h2>
           <ul className="mt-4 grid gap-3 text-sm">
-            {cart.items.map((i) => {
-              const p = getProduct(i.id);
-              if (!p) return null;
+            {cart.lines.map((i) => {
+              const p = i.product;
               return (
                 <li key={i.key} className="flex justify-between gap-3">
                   <span className="min-w-0">

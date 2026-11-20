@@ -4,6 +4,7 @@ import { Flame } from "lucide-react";
 import { ProductGrid } from "@/components/site/ProductCard";
 import { byTag } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
+import { catalogQueryOptions, useCatalog } from "@/lib/catalog-query";
 
 export const Route = createFileRoute("/trending")({
   head: () => ({
@@ -16,11 +17,13 @@ export const Route = createFileRoute("/trending")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(catalogQueryOptions),
   component: Trending,
 });
 
 function Trending() {
   const { t } = useI18n();
+  const list = byTag(useCatalog().products, "trending");
   return (
     <section className="container-page pt-8">
       <div className="rounded-3xl bg-ink-gradient p-8 sm:p-10">
@@ -31,7 +34,7 @@ function Trending() {
         <h1 className="mt-3 text-3xl font-extrabold text-ink-foreground">{t("trendingNow")}</h1>
         <p className="mt-2 text-ink-foreground/70">{t("trendingSubtitle")}</p>
       </div>
-      <ProductGrid products={byTag("trending")} className="mt-8" />
+      {list.length ? <ProductGrid products={list} className="mt-8" /> : <p className="mt-8 rounded-3xl border bg-card p-10 text-center text-muted-foreground">{t("catalogEmpty")}</p>}
     </section>
   );
 }

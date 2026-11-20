@@ -1,11 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { ProductGrid } from "@/components/site/ProductCard";
-import { getCategory, products } from "@/data/products";
+import { getCategory } from "@/data/products";
+import { catalogQueryOptions, useCatalog } from "@/lib/catalog-query";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/category/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params, context }) => {
+    await context.queryClient.ensureQueryData(catalogQueryOptions);
     const category = getCategory(params.slug);
     if (!category) throw notFound();
     return { slug: category.slug, title: category.name.fa, description: category.description.fa };
@@ -38,6 +40,7 @@ function CategoryPage() {
   const { slug } = Route.useLoaderData();
   const { l, t, num } = useI18n();
   const category = getCategory(slug)!;
+  const { products } = useCatalog();
   const list = products.filter((p) => p.category === slug);
   return (
     <section className="container-page pt-8">
@@ -63,7 +66,7 @@ function CategoryPage() {
           )}
         </div>
       </div>
-      <ProductGrid products={list} className="mt-8" />
+      {list.length ? <ProductGrid products={list} className="mt-8" /> : <p className="mt-8 rounded-3xl border bg-card p-10 text-center text-muted-foreground">{t("catalogEmpty")}</p>}
     </section>
   );
 }

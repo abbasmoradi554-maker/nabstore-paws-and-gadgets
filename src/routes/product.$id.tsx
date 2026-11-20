@@ -8,15 +8,18 @@ import { Button } from "@/components/ui/button";
 import { discountPercent, getCategory, getProduct, hasDiscount, relatedProducts, type OptionType } from "@/data/products";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n, type DictKey } from "@/lib/i18n";
+import { catalogQueryOptions, useCatalog } from "@/lib/catalog-query";
 import { cn } from "@/lib/utils";
 
 const SITE = "https://nabstore-paws-and-gadgets.lovable.app";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const p = getProduct(params.id);
+  loader: async ({ params, context }) => {
+    const { products } = await context.queryClient.ensureQueryData(catalogQueryOptions);
+    const p = getProduct(products, params.id);
     if (!p) throw notFound();
-    return { id: p.id, title: p.name.fa, description: `${p.short.fa} — ${p.description.fa}`.slice(0, 160) };
+    const image = p.images[0]?.startsWith("https://") ? p.images[0] : undefined;
+    return { id: p.id, title: p.name.fa, image, description: `${p.short.fa} — ${p.description.fa}`.slice(0, 160) };
   },
   head: ({ loaderData, params }) => ({
     meta: loaderData
@@ -27,7 +30,13 @@ export const Route = createFileRoute("/product/$id")({
           { property: "og:description", content: loaderData.description },
           { property: "og:type", content: "product" },
           { property: "og:url", content: `${SITE}/product/${params.id}` },
-          { name: "twitter:card", content: "summary" },
+          { name: "twitter:card", content: loaderData.image ? "summary_large_image" : "summary" },
+          ...(loaderData.image
+            ? [
+                { property: "og:image", content: loaderData.image },
+                { name: "twitter:image", content: loaderData.image },
+              ]
+            : []),
         ]
       : [{ title: "محصول پیدا نشد | ناب استور" }, { name: "robots", content: "noindex" }],
     links: loaderData ? [{ rel: "canonical", href: `${SITE}/product/${params.id}` }] : [],
@@ -61,7 +70,8 @@ function ProductPage() {
 
 function ProductDetail({ id }: { id: string }) {
   const navigate = useNavigate();
-  const product = getProduct(id)!;
+  const { products } = useCatalog();
+  const product = getProduct(products, id)!;
   const category = getCategory(product.category);
   const { t, l, price, num } = useI18n();
   const cart = useCart();
@@ -71,10 +81,11 @@ function ProductDetail({ id }: { id: string }) {
     Object.fromEntries(product.options.map((o) => [o.type, o.values[0]?.fa ?? ""])),
   );
   const discount = discountPercent(product);
-  const related = relatedProducts(product);
+  const related = relatedProducts(products, product);
 
   const addToCart = () => {
-    cart.add(product.id, selected, qty);
+    if (!product.inStock) return;
+    cart.add(product, selected, qty);
     toast.success(t("addedToCart"), {
       action: { label: t("viewCart"), onClick: () => navigate({ to: "/cart" }) },
     });
@@ -136,7 +147,9 @@ function ProductDetail({ id }: { id: string }) {
           {category && <p className="text-sm font-medium text-primary">{l(category.name)}</p>}
           <h1 className="mt-1 text-2xl font-extrabold leading-snug sm:text-3xl">{l(product.name)}</h1>
           <p className="mt-2 text-muted-foreground">{l(product.short)}</p>
-          <p className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{t("sampleProductNote")}</p>
+          {!product.inStock && (
+            <p className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-destructive">{t("outOfStock")}</p>
+          )}
 
           <div className="mt-5 flex items-end gap-3">
             <span className="text-2xl font-extrabold">{price(product.price)}</span>
@@ -180,7 +193,7 @@ function ProductDetail({ id }: { id: string }) {
                 <Minus />
               </Button>
             </div>
-            <Button size="xl" className="flex-1" onClick={addToCart}>
+            <Button size="xl" className="flex-1" onClick={addToCart} disabled={!product.inStock}>
               <ShoppingBag />
               {t("addToCart")}
             </Button>

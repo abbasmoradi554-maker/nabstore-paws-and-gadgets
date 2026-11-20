@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { categories, products } from "@/data/products";
+import { categories, filterProducts, type Product } from "@/data/products";
 import { customerSchema } from "@/lib/order-schema";
-import { priceOrder } from "@/lib/order-pricing";
+import { resolveCart } from "@/lib/order-pricing";
+import { productInputSchema } from "@/lib/product-schema";
 import { jalaliYear } from "@/lib/i18n";
 
 const validCustomer = {
@@ -38,40 +39,15 @@ describe("catalog rules", () => {
     ]);
   });
 
-  it("has at least 3 products in every category", () => {
-    for (const c of categories) {
-      expect(products.filter((p) => p.category === c.slug).length).toBeGreaterThanOrEqual(3);
-    }
-  });
-
-  it("prices every product under 3,000,000 Toman", () => {
-    for (const p of products) expect(p.price).toBeLessThan(3_000_000);
-  });
-
-  it("keeps prices inside each category's range", () => {
-    const ranges: Record<string, [number, number]> = {
-      case: [150_000, 650_000],
-      phoneAccessory: [100_000, 900_000],
-      "food-water": [200_000, 1_500_000],
-      toys: [80_000, 600_000],
-      collars: [120_000, 700_000],
-      hygiene: [90_000, 800_000],
-      "beds-carriers": [400_000, 2_000_000],
-      gadgets: [150_000, 1_800_000],
-    };
-    for (const p of products) {
-      const key =
-        p.category === "phone-cases"
-          ? ["silicone", "clear", "printed"].includes(p.subcategory ?? "")
-            ? "case"
-            : "phoneAccessory"
-          : p.category;
-      const [min, max] = ranges[key] ?? [0, 0];
-      expect(p.price, p.id).toBeGreaterThanOrEqual(min);
-      expect(p.price, p.id).toBeLessThanOrEqual(max);
-    }
-  });
 });
+
+const product = (over: Partial<Product>): Product => ({
+  id: "real-case", name: { fa: "قاب", en: "Case" }, price: 290_000, category: "phone-cases",
+  short: { fa: "", en: "" }, description: { fa: "", en: "" }, specs: [],
+  options: [{ type: "model", values: [{ fa: "iPhone 13", en: "iPhone 13" }] }],
+  images: [], tags: [], sortOrder: 0, inStock: true, createdAt: "2026-01-01T00:00:00Z", ...over,
+});
+const catalog = [product({}), product({ id: "sold-out", inStock: false })];
 
 describe("checkout rules", () => {
   it("accepts a mobile in 09xxxxxxxxx form, including Persian digits", () => {
@@ -91,15 +67,35 @@ describe("checkout rules", () => {
     expect(customerSchema.safeParse({ ...validCustomer, postalCode: "۱۲۳۴۵۶۷۸۹۰" }).success).toBe(true);
   });
 
-  it("prices orders from the catalog, not from the client", () => {
-    const { total, lines } = priceOrder([{ id: "silicone-case", qty: 2, options: {} }]);
-    expect(lines[0]?.unitPrice).toBe(290_000);
+  it("prices the cart from the live catalog and skips out-of-stock or missing items", () => {
+    const { total, lines } = resolveCart(catalog, [
+      { id: "real-case", qty: 2, options: {} },
+      { id: "sold-out", qty: 1, options: {} },
+      { id: "nope", qty: 1, options: {} },
+    ]);
+    expect(lines.map((l) => l.id)).toEqual(["real-case"]);
     expect(total).toBe(580_000);
   });
 
-  it("rejects unknown products and invalid options", () => {
-    expect(() => priceOrder([{ id: "nope", qty: 1, options: {} }])).toThrow();
-    expect(() => priceOrder([{ id: "silicone-case", qty: 1, options: { model: "Nokia 3310" } }])).toThrow();
+  it("drops cart items with an unknown option value", () => {
+    expect(resolveCart(catalog, [{ id: "real-case", qty: 1, options: { model: "Nokia 3310" } }]).lines).toEqual([]);
+  });
+});
+
+describe("admin product rules", () => {
+  const base = { id: "case-a", name: { fa: "قاب", en: "Case" }, price: 100_000, category: "phone-cases" };
+  it("rejects an old price that is not higher than the price", () => {
+    expect(productInputSchema.safeParse({ ...base, oldPrice: 100_000 }).success).toBe(false);
+    expect(productInputSchema.safeParse({ ...base, oldPrice: 120_000 }).success).toBe(true);
+  });
+  it("rejects a subcategory that does not belong to the category", () => {
+    expect(productInputSchema.safeParse({ ...base, category: "toys", subcategory: "silicone" }).success).toBe(false);
+  });
+  it("only accepts https image links", () => {
+    expect(productInputSchema.safeParse({ ...base, images: ["http://x.com/a.jpg"] }).success).toBe(false);
+  });
+  it("filters search results from the provided catalog only", () => {
+    expect(filterProducts([], { q: "case" })).toEqual([]);
   });
 });
 

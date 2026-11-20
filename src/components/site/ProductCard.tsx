@@ -39,9 +39,6 @@ export function ProductCard({ product, className }: { product: Product; classNam
             </span>
           )}
         </div>
-        <span className="absolute end-3 top-3 rounded-full bg-card/90 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground backdrop-blur">
-          {t("sampleBadge")}
-        </span>
       </Link>
 
       <div className="flex flex-1 flex-col gap-1 p-4">
@@ -72,7 +69,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
               variant="soft"
               aria-label={t("addToCart")}
               onClick={() => {
-                cart.add(product.id, {});
+                cart.add(product, {});
                 toast.success(t("addedToCart"));
               }}
               className="rounded-xl"

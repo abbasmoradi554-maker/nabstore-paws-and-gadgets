@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getProduct } from "@/data/products";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 
@@ -27,7 +26,7 @@ function CartPage() {
 
   if (!cart.ready) return <section className="container-page min-h-[40vh] pt-10" />;
 
-  if (cart.items.length === 0) {
+  if (cart.lines.length === 0) {
     return (
       <section className="container-page pt-10">
         <h1 className="text-3xl font-bold">{t("cartTitle")}</h1>
@@ -47,9 +46,8 @@ function CartPage() {
       <h1 className="text-3xl font-bold">{t("cartTitle")}</h1>
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <ul className="grid gap-3 lg:col-span-2">
-          {cart.items.map((item) => {
-            const p = getProduct(item.id);
-            if (!p) return null;
+          {cart.lines.map((item) => {
+            const p = item.product;
             const opts = p.options
               .map((o) => o.values.find((v) => v.fa === item.options[o.type]))
               .filter(Boolean)

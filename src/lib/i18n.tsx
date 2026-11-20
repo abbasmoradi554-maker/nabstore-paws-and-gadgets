@@ -7,8 +7,8 @@ const STORAGE_KEY = "nabstore-lang";
 
 const dict = {
   previewNotice: {
-    fa: "محصولات نمونه‌اند — قیمت و موجودی نهایی پس از ثبت سفارش توسط پشتیبانی با شما هماهنگ می‌شود.",
-    en: "Products are samples — final price and availability are confirmed by support after you order.",
+    fa: "موجودی و هزینه ارسال پس از ثبت سفارش توسط پشتیبانی با شما هماهنگ می‌شود.",
+    en: "Availability and shipping cost are confirmed by support after you order.",
   },
   searchPlaceholder: { fa: "جستجو در ناب استور…", en: "Search NABSTORE…" },
   search: { fa: "جستجو", en: "Search" },
@@ -146,7 +146,12 @@ const dict = {
   addedToCart: { fa: "به سبد خرید اضافه شد", en: "Added to cart" },
   viewCart: { fa: "مشاهده سبد", en: "View cart" },
   chooseOptions: { fa: "انتخاب گزینه‌ها", en: "Choose options" },
-  sampleProductNote: { fa: "این محصول نمونه است.", en: "This is a sample product." },
+  outOfStock: { fa: "ناموجود", en: "Out of stock" },
+  catalogEmptyTitle: { fa: "هنوز محصولی ثبت نشده است", en: "No products yet" },
+  catalogEmpty: {
+    fa: "فروشگاه در حال آماده‌سازی است. محصولات واقعی پس از افزودن توسط مدیر فروشگاه در این بخش نمایش داده می‌شوند.",
+    en: "The store is being prepared. Real products will appear here once the store admin adds them.",
+  },
   productNotFound: { fa: "این محصول پیدا نشد.", en: "This product doesn't exist." },
 
   cartTitle: { fa: "سبد خرید", en: "Shopping cart" },
@@ -181,6 +186,11 @@ const dict = {
   copySummary: { fa: "کپی خلاصه سفارش", en: "Copy order summary" },
   copied: { fa: "کپی شد", en: "Copied" },
   orderFailed: { fa: "ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید.", en: "We couldn't place your order. Please try again." },
+  orderUnavailable: {
+    fa: "برخی کالاهای سبد دیگر موجود یا فعال نیستند. لطفاً سبد خرید را بررسی کنید.",
+    en: "Some items in your cart are no longer available. Please review your cart.",
+  },
+  orderInvalid: { fa: "اطلاعات سفارش معتبر نیست. لطفاً فرم را بررسی کنید.", en: "Order details are invalid. Please check the form." },
   backHome: { fa: "بازگشت به خانه", en: "Back to home" },
   nameRequired: { fa: "نام را وارد کنید.", en: "Enter your name." },
   nameTooLong: { fa: "نام بیش از حد طولانی است.", en: "Name is too long." },

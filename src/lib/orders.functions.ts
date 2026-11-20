@@ -1,47 +1,35 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { orderInputSchema } from "./order-schema";
-import { priceOrder } from "./order-pricing";
+import type { PricedLine } from "./order-pricing";
 
-function makeOrderCode() {
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return `NB-${String((buf[0] ?? 0) % 100000000).padStart(8, "0")}`;
-}
+export type PlaceOrderResult =
+  | { ok: true; code: string; lines: PricedLine[]; total: number }
+  | { ok: false; error: "unavailable" | "invalid" | "failed" };
 
-// Public endpoint: anyone can place an order. Input is validated with zod and
-// prices are recalculated from the catalog on the server.
+// Public endpoint. The database function `place_order` re-validates the customer,
+// re-prices every item from current active, in-stock products and saves the order.
+// Client-sent prices are never used; no service-role key is needed.
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderInputSchema.parse(input))
-  .handler(async ({ data }) => {
-    let priced: ReturnType<typeof priceOrder>;
+  .handler(async ({ data }): Promise<PlaceOrderResult> => {
     try {
-      priced = priceOrder(data.items);
-    } catch {
-      throw new Error("invalid_items");
-    }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const c = data.customer;
-
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const code = makeOrderCode();
-      const { error } = await supabaseAdmin.from("orders").insert({
-        order_code: code,
-        customer_name: c.name,
-        mobile: c.mobile,
-        province: c.province,
-        city: c.city,
-        address: c.address,
-        postal_code: c.postalCode,
-        notes: c.notes ?? "",
-        items: priced.lines,
-        total_toman: priced.total,
+      const { createPublicDb } = await import("./public-db.server");
+      const { data: res, error } = await createPublicDb().rpc("place_order", {
+        _customer: data.customer,
+        _items: data.items,
       });
-      if (!error) return { code, lines: priced.lines, total: priced.total };
-      if (error.code !== "23505") {
-        console.error("placeOrder insert failed", error.message);
-        throw new Error("save_failed");
+      if (error) {
+        const msg = error.message ?? "";
+        if (msg.includes("unavailable_product") || msg.includes("invalid_option")) return { ok: false, error: "unavailable" };
+        if (msg.includes("invalid_customer") || msg.includes("invalid_items")) return { ok: false, error: "invalid" };
+        console.error("placeOrder failed", msg);
+        return { ok: false, error: "failed" };
       }
+      const r = res as { code: string; lines: PricedLine[]; total: number };
+      return { ok: true, code: r.code, lines: r.lines, total: Number(r.total) };
+    } catch (e) {
+      console.error("placeOrder failed", e instanceof Error ? e.message : e);
+      return { ok: false, error: "failed" };
     }
-    throw new Error("save_failed");
   });

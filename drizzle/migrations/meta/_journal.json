@@ -8,6 +8,13 @@
       "when": 1794716804505,
       "tag": "0000_create_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795168981718,
+      "tag": "0001_catalog_admin_and_orders_rpc",
+      "breakpoints": true
     }
   ]
 }

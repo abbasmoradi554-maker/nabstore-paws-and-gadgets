@@ -20,7 +20,8 @@ import { CategoryCard } from "@/components/site/CategoryCard";
 import { ProductGrid, ProductRail } from "@/components/site/ProductCard";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { Button } from "@/components/ui/button";
-import { byTag, categories, onSale, products } from "@/data/products";
+import { byTag, categories, newest, onSale } from "@/data/products";
+import { catalogQueryOptions, useCatalog } from "@/lib/catalog-query";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -38,15 +39,18 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(catalogQueryOptions),
   component: Index,
 });
 
 function Index() {
+  const { products } = useCatalog();
   return (
     <>
       <Hero />
       <ValueStrip />
       <CategoriesSection />
+      {products.length === 0 && <EmptyCatalog />}
       <PhoneSection />
       <TrendingSection />
       <NewArrivals />
@@ -185,20 +189,36 @@ function CategoriesSection() {
   );
 }
 
+function EmptyCatalog() {
+  const { t } = useI18n();
+  return (
+    <section className="container-page mt-16 sm:mt-20">
+      <div className="rounded-3xl border bg-card p-8 text-center sm:p-12">
+        <h2 className="text-xl font-bold">{t("catalogEmptyTitle")}</h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground">{t("catalogEmpty")}</p>
+      </div>
+    </section>
+  );
+}
+
 function PhoneSection() {
   const { l } = useI18n();
+  const { products } = useCatalog();
   const cat = categories[0];
-  if (!cat) return null;
+  const list = products.filter((p) => p.category === cat?.slug).slice(0, 4);
+  if (!cat || !list.length) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={l(cat.name)} subtitle={l(cat.description)} link={{ to: "/category/$slug", params: { slug: cat.slug } }} />
-      <ProductRail products={products.filter((p) => p.category === cat.slug).slice(0, 4)} />
+      <ProductRail products={list} />
     </section>
   );
 }
 
 function TrendingSection() {
   const { t } = useI18n();
+  const list = byTag(useCatalog().products, "trending").slice(0, 4);
+  if (!list.length) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <div className="overflow-hidden rounded-3xl bg-ink-gradient px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
@@ -207,7 +227,7 @@ function TrendingSection() {
           {t("badgeTrending")}
         </div>
         <SectionHeader inverted title={t("trendingNow")} subtitle={t("trendingSubtitle")} link={{ to: "/trending" }} />
-        <ProductRail products={byTag("trending").slice(0, 4)} />
+        <ProductRail products={list} />
       </div>
     </section>
   );
@@ -215,7 +235,8 @@ function TrendingSection() {
 
 function NewArrivals() {
   const { t } = useI18n();
-  const list = [...products].sort((a, b) => b.addedOrder - a.addedOrder).slice(0, 4);
+  const list = newest(useCatalog().products).slice(0, 4);
+  if (!list.length) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader
@@ -230,6 +251,8 @@ function NewArrivals() {
 
 function OffersSection() {
   const { t } = useI18n();
+  const list = onSale(useCatalog().products).slice(0, 4);
+  if (!list.length) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <div className="grid gap-4 lg:grid-cols-5">
@@ -257,7 +280,7 @@ function OffersSection() {
           </Button>
         </div>
         <div className="lg:col-span-3">
-          <ProductGrid products={onSale().slice(0, 4)} className="md:grid-cols-2 lg:grid-cols-2" />
+          <ProductGrid products={list} className="md:grid-cols-2 lg:grid-cols-2" />
         </div>
       </div>
     </section>
@@ -266,20 +289,24 @@ function OffersSection() {
 
 function BestSellers() {
   const { t } = useI18n();
+  const list = byTag(useCatalog().products, "pick").slice(0, 4);
+  if (!list.length) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("bestSellers")} subtitle={t("bestSellersSubtitle")} link={{ to: "/shop" }} />
-      <ProductRail products={byTag("pick").slice(0, 4)} />
+      <ProductRail products={list} />
     </section>
   );
 }
 
 function Recommended() {
   const { t } = useI18n();
+  const list = byTag(useCatalog().products, "recommended").slice(0, 4);
+  if (!list.length) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("recommended")} subtitle={t("recommendedSubtitle")} link={{ to: "/shop" }} />
-      <ProductGrid products={byTag("recommended").slice(0, 4)} />
+      <ProductGrid products={list} />
     </section>
   );
 }
