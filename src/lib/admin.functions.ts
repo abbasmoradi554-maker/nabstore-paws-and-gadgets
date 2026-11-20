@@ -1,5 +1,26 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+const ADMIN_EMAIL = "abbasmoradi554@gmail.com";
+
+async function admin(accessToken: string) {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("supabase_configuration_missing");
+
+  const db = createClient<Database>(url, key, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  const { data, error } = await db.auth.getUser(accessToken);
+  if (error || data.user?.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
+    throw new Error("admin_forbidden");
+  }
+  return db;
+}
+
 
 const tokenSchema = z.object({
   accessToken: z.string().min(20).max(4096),
@@ -11,16 +32,7 @@ const updateSchema = tokenSchema.extend({
 });
 
 async function requireAdmin(accessToken: string) {
-  const allowedEmail = process.env["ADMIN_EMAIL"]?.trim().toLowerCase();
-  if (!allowedEmail) throw new Error("admin_not_configured");
-
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
-  if (error || !data.user?.email || data.user.email.trim().toLowerCase() !== allowedEmail) {
-    throw new Error("admin_forbidden");
-  }
-
-  return supabaseAdmin;
+  return admin(accessToken);
 }
 
 export const getAdminOrders = createServerFn({ method: "POST" })
