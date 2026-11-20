@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
   Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X,
@@ -41,7 +41,7 @@ const blank = (): Product => ({
 const inputClass = "h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 const areaClass = "w-full rounded-xl border border-input bg-background p-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return <label className="grid min-w-0 gap-1.5 text-sm font-medium"><span>{label}</span>{children}{hint ? <span className="text-xs font-normal text-muted-foreground">{hint}</span> : null}</label>;
 }
 function formatMoney(value: number) {
