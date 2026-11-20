@@ -153,7 +153,7 @@ function AdminPage() {
 
   return (
     <section className="container-page max-w-6xl py-10">
-      <div className="mb-8 flex items-center gap-3">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3">
         <div className="rounded-2xl bg-primary-soft p-3 text-primary"><ShieldCheck className="size-6" /></div>
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">مدیریت سفارش‌های ناب استور</h1>
