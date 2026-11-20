@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
   Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X,
@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { deleteAdminProduct, listAdminProducts, saveAdminProduct } from "@/lib/products-admin.functions";
+import { deleteAdminProduct, listAdminProducts, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
@@ -62,7 +62,7 @@ function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = async (token: string) => {
@@ -163,6 +163,44 @@ function AdminProductsPage() {
       else toast.error("ذخیره انجام نشد؛ شناسه، قیمت، آدرس تصاویر و قالب مشخصات را بررسی کنید.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const uploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const currentImages = imagesText.split(/[\\n,]/).map((value) => value.trim()).filter(Boolean);
+    if (currentImages.length >= 8) {
+      toast.error("حداکثر ۸ تصویر برای هر محصول مجاز است.");
+      return;
+    }
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("فرمت تصویر باید JPG، PNG، WEBP یا AVIF باشد.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("حجم هر تصویر نباید بیشتر از ۴ مگابایت باشد.");
+      return;
+    }
+    if (!accessToken) return;
+    setUploadingImage(true);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+      }
+      const result = await uploadAdminProductImage({
+        data: { accessToken, contentType: file.type as "image/jpeg" | "image/png" | "image/webp" | "image/avif", base64: btoa(binary) },
+      });
+      setImagesText((current) => [...current.split(/[\\n,]/).map((value) => value.trim()).filter(Boolean), result.url].slice(0, 8).join("\\n"));
+      toast.success("تصویر با موفقیت بارگذاری شد.");
+    } catch {
+      toast.error("بارگذاری تصویر انجام نشد؛ اتصال فضای ذخیره‌سازی را بررسی کنید.");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -278,8 +316,8 @@ function AdminProductsPage() {
           <Field label="گزینه‌های قابل انتخاب (JSON)" hint='نوع گزینه: model، color، size یا design'>
             <textarea value={optionsJson} onChange={(e) => setOptionsJson(e.target.value)} rows={5} dir="ltr" spellCheck={false} className={areaClass + " font-mono text-xs"} />
           </Field>
-          <Field label="آدرس تصاویر محصول" hint="هر خط یک لینک مستقیم تصویر؛ حداکثر ۸ تصویر. بارگذاری فایل مستقیم هنوز فعال نشده است.">
-            <textarea value={imagesText} onChange={(e) => setImagesText(e.target.value)} rows={4} dir="ltr" className={areaClass} placeholder="https://example.com/product-image.webp" />
+          <Field label="بارگذاری تصویر از دستگاه" hint="JPG، PNG، WEBP یا AVIF · حداکثر ۴ مگابایت برای هر تصویر">
+            <div className="flex flex-wrap items-center gap-3"><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(e) => void uploadImage(e)} disabled={uploadingImage || imagesText.split(/[\\n,]/).filter((v) => v.trim()).length >= 8} className="block w-full text-sm file:ml-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary disabled:opacity-50" />{uploadingImage ? <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> در حال بارگذاری...</span> : null}</div>\n          </Field>\n          <Field label="آدرس تصاویر (قابل ویرایش)" hint="هر خط یک لینک مستقیم تصویر؛ حداکثر ۸ تصویر.">
           </Field>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3">
             <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="size-4 accent-primary" /> نمایش محصول در فروشگاه</label>
