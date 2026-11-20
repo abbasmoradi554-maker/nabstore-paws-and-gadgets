@@ -20,7 +20,8 @@ import { CategoryCard } from "@/components/site/CategoryCard";
 import { ProductGrid, ProductRail } from "@/components/site/ProductCard";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { Button } from "@/components/ui/button";
-import { byTag, categories, onSale, products } from "@/data/products";
+import { categories } from "@/data/products";
+import { useCatalogProducts } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -187,18 +188,20 @@ function CategoriesSection() {
 
 function PhoneSection() {
   const { l } = useI18n();
+  const catalog = useCatalogProducts();
   const cat = categories[0];
   if (!cat) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={l(cat.name)} subtitle={l(cat.description)} link={{ to: "/category/$slug", params: { slug: cat.slug } }} />
-      <ProductRail products={products.filter((p) => p.category === cat.slug).slice(0, 4)} />
+      <ProductRail products={(catalog.data ?? []).filter((p) => p.category === cat.slug).slice(0, 4)} />
     </section>
   );
 }
 
 function TrendingSection() {
   const { t } = useI18n();
+  const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
       <div className="overflow-hidden rounded-3xl bg-ink-gradient px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
@@ -207,7 +210,7 @@ function TrendingSection() {
           {t("badgeTrending")}
         </div>
         <SectionHeader inverted title={t("trendingNow")} subtitle={t("trendingSubtitle")} link={{ to: "/trending" }} />
-        <ProductRail products={byTag("trending").slice(0, 4)} />
+        <ProductRail products={(catalog.data ?? []).filter((p) => p.tags.includes("trending")).slice(0, 4)} />
       </div>
     </section>
   );
@@ -215,7 +218,8 @@ function TrendingSection() {
 
 function NewArrivals() {
   const { t } = useI18n();
-  const list = [...products].sort((a, b) => b.addedOrder - a.addedOrder).slice(0, 4);
+  const catalog = useCatalogProducts();
+  const list = [...(catalog.data ?? [])].sort((a, b) => b.addedOrder - a.addedOrder).slice(0, 4);
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader
@@ -230,6 +234,7 @@ function NewArrivals() {
 
 function OffersSection() {
   const { t } = useI18n();
+  const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
       <div className="grid gap-4 lg:grid-cols-5">
@@ -257,7 +262,7 @@ function OffersSection() {
           </Button>
         </div>
         <div className="lg:col-span-3">
-          <ProductGrid products={onSale().slice(0, 4)} className="md:grid-cols-2 lg:grid-cols-2" />
+          <ProductGrid products={(catalog.data ?? []).filter((p) => p.oldPrice != null && p.oldPrice > p.price).slice(0, 4)} className="md:grid-cols-2 lg:grid-cols-2" />
         </div>
       </div>
     </section>
@@ -266,20 +271,22 @@ function OffersSection() {
 
 function BestSellers() {
   const { t } = useI18n();
+  const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("bestSellers")} subtitle={t("bestSellersSubtitle")} link={{ to: "/shop" }} />
-      <ProductRail products={byTag("pick").slice(0, 4)} />
+      <ProductRail products={(catalog.data ?? []).filter((p) => p.tags.includes("pick")).slice(0, 4)} />
     </section>
   );
 }
 
 function Recommended() {
   const { t } = useI18n();
+  const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("recommended")} subtitle={t("recommendedSubtitle")} link={{ to: "/shop" }} />
-      <ProductGrid products={byTag("recommended").slice(0, 4)} />
+      <ProductGrid products={(catalog.data ?? []).filter((p) => p.tags.includes("recommended")).slice(0, 4)} />
     </section>
   );
 }
