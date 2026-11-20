@@ -31,7 +31,7 @@ const tokenSchema = z.object({
 
 const updateSchema = tokenSchema.extend({
   orderId: z.string().uuid(),
-  status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
+  status: z.enum(["pending_review", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
 });
 
 async function requireAdmin(accessToken: string) {
