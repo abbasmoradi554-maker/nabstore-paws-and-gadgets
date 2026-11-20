@@ -55,13 +55,19 @@ function AdminPage() {
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
   const loadOrders = async (accessToken: string) => {
-    const result = await getAdminOrders({ data: { accessToken } });
-    setOrders(result.orders as Order[]);
-    setLoggedIn(true);
+    setOrdersLoading(true);
+    try {
+      const result = await getAdminOrders({ data: { accessToken } });
+      setOrders(result.orders as Order[]);
+      setLoggedIn(true);
+    } finally {
+      setOrdersLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -71,31 +77,33 @@ function AdminPage() {
         promise,
         new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(label)), ms)),
       ]);
+
     void (async () => {
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 8000, "session_timeout");
-        if (data.session?.access_token) {
-          const result = await withTimeout(
-            getAdminOrders({ data: { accessToken: data.session.access_token } }),
-            12000,
-            "orders_timeout",
-          );
-          if (active) {
-            setOrders(result.orders as Order[]);
-            setLoggedIn(true);
-          }
+        // Session restoration is local-storage based; don't hold the whole page
+        // behind the orders API request.
+        const { data } = await withTimeout(supabase.auth.getSession(), 2500, "session_timeout");
+        const token = data.session?.access_token;
+        if (token && active) {
+          setLoggedIn(true);
+          setLoading(false);
+          void withTimeout(loadOrders(token), 10000, "orders_timeout").catch((error) => {
+            if (active) {
+              console.error("Admin orders initial load failed", error);
+              toast.error("دریافت سفارش‌ها طول کشید؛ از دکمه به‌روزرسانی استفاده کنید.");
+            }
+          });
         }
       } catch (error) {
         if (active) {
-          await supabase.auth.signOut();
-          setLoggedIn(false);
-          console.error("Admin orders initial load failed", error);
-          toast.error("بازیابی پنل سفارش‌ها طول کشید؛ لطفاً دوباره وارد شوید.");
+          console.error("Admin session restore failed", error);
+          toast.error("بازیابی نشست انجام نشد؛ لطفاً دوباره وارد شوید.");
         }
       } finally {
         if (active) setLoading(false);
       }
     })();
+
     return () => { active = false; };
   }, []);
 
@@ -105,16 +113,19 @@ function AdminPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error || !data.session?.access_token) throw new Error("login_failed");
-      await loadOrders(data.session.access_token);
+      setLoggedIn(true);
       setPassword("");
+      await loadOrders(data.session.access_token);
       toast.success("با موفقیت وارد پنل مدیریت شدید");
     } catch (error) {
-      await supabase.auth.signOut();
-      setLoggedIn(false);
       const message = error instanceof Error ? error.message : "";
-      toast.error(message.includes("admin_not_configured")
-        ? "ایمیل مدیر در تنظیمات سرور تعریف نشده است."
-        : "ایمیل یا رمز عبور مجاز نیست.");
+      if (message.includes("admin_forbidden") || message.includes("Invalid login credentials")) {
+        setLoggedIn(false);
+        await supabase.auth.signOut();
+        toast.error("ایمیل یا رمز عبور مجاز نیست.");
+      } else {
+        toast.error("ورود انجام شد، اما دریافت سفارش‌ها ناموفق بود؛ دوباره به‌روزرسانی کنید.");
+      }
     } finally {
       setSubmitting(false);
       setLoading(false);
@@ -237,7 +248,10 @@ function AdminPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDate(order.created_at)}</td>
                   </tr>
                 ))}
-                {orders.length === 0 && (
+                {ordersLoading && (
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground"><span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> در حال دریافت سفارش‌ها…</span></td></tr>
+                )}
+                {!ordersLoading && orders.length === 0 && (
                   <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">هنوز سفارشی ثبت نشده است.</td></tr>
                 )}
               </tbody>
