@@ -77,12 +77,9 @@ function AdminProductsPage() {
       try {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
-        if (token) {
-          await listAdminProducts({ data: { accessToken: token } });
-          if (live) {
-            setAccessToken(token);
-            await load(token);
-          }
+        if (token && live) {
+          setAccessToken(token);
+          await load(token);
         }
       } catch {
         await supabase.auth.signOut();
