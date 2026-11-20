@@ -10,18 +10,59 @@ function makeOrderCode() {
   return `NB-${String((buf[0] ?? 0) % 100000000).padStart(8, "0")}`;
 }
 
-// Public endpoint: anyone can place an order. Input is validated with zod and
-// prices are recalculated from the catalog on the server.
+/**
+ * Reprice against the database on the server whenever a product row exists.
+ * Static sample data is a temporary fallback until the real catalog is migrated.
+ * The browser never supplies a trusted price, and inactive DB products are rejected.
+ */
+async function priceOrderFromCatalog(items: Parameters<typeof priceOrder>[0]) {
+  const base = priceOrder(items);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const ids = [...new Set(items.map((item) => item.id))];
+  const { data: rows, error } = await (supabaseAdmin as any)
+    .from("products")
+    .select("id,name,price,active")
+    .in("id", ids);
+
+  if (error) {
+    console.error("Order catalog lookup failed", error.message);
+    throw new Error("catalog_unavailable");
+  }
+
+  const byId = new Map<string, any>((rows ?? []).map((row: any) => [row.id, row]));
+  const lines = base.lines.map((line) => {
+    const row = byId.get(line.id);
+    if (!row) return line; // Existing orders continue during the catalog migration.
+    if (row.active !== true || !Number.isSafeInteger(row.price) || row.price < 0) {
+      throw new Error("invalid_catalog_product");
+    }
+    const nameFa = typeof row.name?.fa === "string" && row.name.fa.trim()
+      ? row.name.fa.trim()
+      : line.nameFa;
+    return {
+      ...line,
+      nameFa,
+      unitPrice: row.price,
+      lineTotal: row.price * line.qty,
+    };
+  });
+
+  return { lines, total: lines.reduce((sum, line) => sum + line.lineTotal, 0) };
+}
+
+// Public endpoint: anyone can place an order. Input is validated with zod;
+// every price is recalculated on the server from the database when available.
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderInputSchema.parse(input))
   .handler(async ({ data }) => {
     // Reject automated submissions without revealing the honeypot to the client.
     if (data.honeypot?.trim()) throw new Error("save_failed");
 
-    let priced: ReturnType<typeof priceOrder>;
+    let priced: Awaited<ReturnType<typeof priceOrderFromCatalog>>;
     try {
-      priced = priceOrder(data.items);
-    } catch {
+      priced = await priceOrderFromCatalog(data.items);
+    } catch (error) {
+      if (error instanceof Error && error.message === "catalog_unavailable") throw new Error("save_failed");
       throw new Error("invalid_items");
     }
 
