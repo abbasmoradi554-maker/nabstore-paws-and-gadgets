@@ -5,7 +5,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { getProduct } from "@/data/products";
+import { useCatalogProducts } from "@/lib/catalog";
 import { useCart } from "@/lib/cart";
 import { formatNumber, useI18n, type DictKey } from "@/lib/i18n";
 import { customerSchema, provinces, type CustomerInput } from "@/lib/order-schema";
@@ -58,6 +58,7 @@ function buildSummary(o: Placed) {
 function Checkout() {
   const { t, l, price, num } = useI18n();
   const cart = useCart();
+  const catalog = useCatalogProducts();
   const submit = useServerFn(placeOrder);
   const [form, setForm] = useState<CustomerInput>(empty);
   const [errors, setErrors] = useState<Partial<Record<Field, DictKey>>>({});
@@ -174,7 +175,7 @@ function Checkout() {
           <h2 className="font-bold">{t("orderSummary")}</h2>
           <ul className="mt-4 grid gap-3 text-sm">
             {cart.items.map((i) => {
-              const p = getProduct(i.id);
+              const p = catalog.data?.find((product) => product.id === i.id);
               if (!p) return null;
               return (
                 <li key={i.key} className="flex justify-between gap-3">
