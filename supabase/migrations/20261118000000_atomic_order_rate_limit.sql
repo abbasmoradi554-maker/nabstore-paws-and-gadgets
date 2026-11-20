@@ -55,5 +55,5 @@ revoke all on function public.place_order_with_rate_limit(
 ) from public, anon, authenticated;
 
 grant execute on function public.place_order_with_rate_limit(
-  text, text, text, text, text, text, text, text, jsonb, integer
+  text, text, text, text, text, text, text, text, jsonb, bigint
 ) to service_role;
