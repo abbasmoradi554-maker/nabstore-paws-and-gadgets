@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { ProductGrid } from "@/components/site/ProductCard";
-import { categories, filterProducts, getCategory, sortKeys, type SortKey } from "@/data/products";
+import { categories, getCategory, sortKeys, type SortKey } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
 import { filterCatalogProducts, useCatalogProducts } from "@/lib/catalog";
 import { toLatinDigits } from "@/lib/order-schema";
