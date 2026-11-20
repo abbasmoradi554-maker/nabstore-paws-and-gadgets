@@ -32,7 +32,7 @@ async function priceOrderFromCatalog(items: Parameters<typeof priceOrder>[0]) {
   const byId = new Map<string, any>((rows ?? []).map((row: any) => [row.id, row]));
   const lines = base.lines.map((line) => {
     const row = byId.get(line.id);
-    if (!row) return line; // Existing orders continue during the catalog migration.
+    if (!row) throw new Error("product_not_in_catalog");
     if (row.active !== true || !Number.isSafeInteger(row.price) || row.price < 0) {
       throw new Error("invalid_catalog_product");
     }
