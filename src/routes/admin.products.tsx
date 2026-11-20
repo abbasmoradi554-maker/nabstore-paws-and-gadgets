@@ -73,16 +73,27 @@ function AdminProductsPage() {
 
   useEffect(() => {
     let live = true;
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string) =>
+      Promise.race<T>([
+        promise,
+        new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(label)), ms)),
+      ]);
     void (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await withTimeout(supabase.auth.getSession(), 8000, "session_timeout");
         const token = data.session?.access_token;
         if (token && live) {
           setAccessToken(token);
-          await load(token);
+          try {
+            await withTimeout(load(token), 12000, "products_timeout");
+          } catch (error) {
+            console.error("Admin products initial load failed", error);
+            if (live) toast.error("ورود انجام شد، اما دریافت فهرست محصولات طول کشید. دکمه تازه‌سازی را بزنید.");
+          }
         }
-      } catch {
-        await supabase.auth.signOut();
+      } catch (error) {
+        console.error("Admin session restore failed", error);
+        if (live) toast.error("بازیابی نشست طول کشید؛ لطفاً دوباره وارد شوید.");
       } finally {
         if (live) setLoading(false);
       }
