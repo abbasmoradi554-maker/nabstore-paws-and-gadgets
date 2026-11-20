@@ -66,20 +66,31 @@ function AdminPage() {
 
   useEffect(() => {
     let active = true;
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string) =>
+      Promise.race<T>([
+        promise,
+        new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(label)), ms)),
+      ]);
     void (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await withTimeout(supabase.auth.getSession(), 8000, "session_timeout");
         if (data.session?.access_token) {
-          const result = await getAdminOrders({ data: { accessToken: data.session.access_token } });
+          const result = await withTimeout(
+            getAdminOrders({ data: { accessToken: data.session.access_token } }),
+            12000,
+            "orders_timeout",
+          );
           if (active) {
             setOrders(result.orders as Order[]);
             setLoggedIn(true);
           }
         }
-      } catch {
+      } catch (error) {
         if (active) {
           await supabase.auth.signOut();
           setLoggedIn(false);
+          console.error("Admin orders initial load failed", error);
+          toast.error("بازیابی پنل سفارش‌ها طول کشید؛ لطفاً دوباره وارد شوید.");
         }
       } finally {
         if (active) setLoading(false);
