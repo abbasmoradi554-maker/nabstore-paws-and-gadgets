@@ -242,10 +242,6 @@ function AdminProductsPage() {
     clearForm();
   };
 
-  if (loading) {
-    return <main className="container-page flex min-h-[55vh] items-center justify-center"><LoaderCircle className="size-8 animate-spin text-primary" /></main>;
-  }
-
   if (!accessToken) {
     return (
       <main className="container-page flex min-h-[65vh] max-w-lg items-center justify-center py-12">
