@@ -62,6 +62,60 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          active: boolean
+          added_order: number
+          category: string
+          description: Json
+          id: string
+          images: Json
+          name: Json
+          old_price: number | null
+          options: Json
+          price: number
+          short: Json
+          specs: Json
+          subcategory: string | null
+          tags: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          added_order?: number
+          category: string
+          description?: Json
+          id: string
+          images?: Json
+          name: Json
+          old_price?: number | null
+          options?: Json
+          price: number
+          short?: Json
+          specs?: Json
+          subcategory?: string | null
+          tags?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          added_order?: number
+          category?: string
+          description?: Json
+          id?: string
+          images?: Json
+          name?: Json
+          old_price?: number | null
+          options?: Json
+          price?: number
+          short?: Json
+          specs?: Json
+          subcategory?: string | null
+          tags?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
