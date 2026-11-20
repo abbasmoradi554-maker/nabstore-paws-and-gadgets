@@ -11,12 +11,10 @@ import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const SITE = "https://nabstore-paws-and-gadgets.lovable.app";
 
 export const Route = createFileRoute("/product/$id")({
   head: ({ params }) => ({
-    meta: [{ title: "محصول | ناب استور" }, { name: "robots", content: "noindex" }, { property: "og:url", content: SITE + "/product/" + params.id }],
-    links: [{ rel: "canonical", href: SITE + "/product/" + params.id }],
+    meta: [{ title: "محصول | ناب استور" }, { name: "robots", content: "noindex" }],
   }),
   notFoundComponent: ProductNotFound,
   component: ProductPage,
