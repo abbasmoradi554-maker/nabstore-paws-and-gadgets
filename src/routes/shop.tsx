@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ProductGrid } from "@/components/site/ProductCard";
 import { categories, filterProducts, getCategory, sortKeys, type SortKey } from "@/data/products";
 import { useI18n } from "@/lib/i18n";
+import { filterCatalogProducts, useCatalogProducts } from "@/lib/catalog";
 import { toLatinDigits } from "@/lib/order-schema";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +57,8 @@ function Shop() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/shop" });
   const { t, l, num, price } = useI18n();
-  const list = filterProducts(search);
+  const catalog = useCatalogProducts();
+  const list = filterCatalogProducts(catalog.data ?? [], search);
   const activeCat = search.cat ? getCategory(search.cat) : undefined;
   const [q, setQ] = useState(search.q ?? "");
   const [min, setMin] = useState(search.min?.toString() ?? "");
@@ -203,7 +205,7 @@ function Shop() {
       </div>
 
       <div className="mt-6">
-        {list.length ? (
+        {!catalog.isLoading && list.length ? (
           <ProductGrid products={list} />
         ) : (
           <div className="rounded-3xl border bg-card p-10 text-center">
