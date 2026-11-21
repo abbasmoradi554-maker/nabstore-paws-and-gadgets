@@ -66,9 +66,16 @@ function AdminProductsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [productsLoading, setProductsLoading] = useState(false);
+
   const load = async (token: string) => {
-    const result = await listAdminProducts({ data: { accessToken: token } });
-    setItems(result.products as Product[]);
+    setProductsLoading(true);
+    try {
+      const result = await listAdminProducts({ data: { accessToken: token } });
+      setItems(result.products as Product[]);
+    } finally {
+      setProductsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -83,13 +90,13 @@ function AdminProductsPage() {
         const { data } = await withTimeout(supabase.auth.getSession(), 8000, "session_timeout");
         const token = data.session?.access_token;
         if (token && live) {
+          // Render the admin workspace immediately; fetch catalog data in the background.
           setAccessToken(token);
-          try {
-            await withTimeout(load(token), 12000, "products_timeout");
-          } catch (error) {
+          setLoading(false);
+          void withTimeout(load(token), 12000, "products_timeout").catch((error) => {
             console.error("Admin products initial load failed", error);
-            if (live) toast.error("ورود انجام شد، اما دریافت فهرست محصولات طول کشید. دکمه تازه‌سازی را بزنید.");
-          }
+            if (live) toast.error("پنل باز شد، اما دریافت محصولات طول کشید؛ از تازه‌سازی استفاده کنید.");
+          });
         }
       } catch (error) {
         console.error("Admin session restore failed", error);
@@ -339,7 +346,7 @@ function AdminProductsPage() {
 
         <section className="min-w-0 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div><h2 className="text-lg font-bold">فهرست محصولات</h2><p className="mt-1 text-xs text-muted-foreground">مدیریت محصولات ثبت‌شده در پایگاه داده</p></div>
+            <div><h2 className="text-lg font-bold">فهرست محصولات</h2><p className="mt-1 text-xs text-muted-foreground">{productsLoading ? "در حال دریافت اطلاعات از پایگاه داده…" : "مدیریت محصولات ثبت‌شده در پایگاه داده"}</p></div>
             <Button type="button" size="sm" onClick={clearForm}><Plus className="size-4" /> محصول جدید</Button>
           </div>
           <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr]">
