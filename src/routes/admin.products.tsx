@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedProductImage } from "@/lib/catalog";
-import { deleteAdminProduct, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
+import { deleteAdminProduct, saveAdminProduct } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
   component: LegacyProductsAdminRedirect,
@@ -238,18 +238,21 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
     if (!accessToken) return;
     setUploadingImage(true);
     try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      let binary = "";
-      for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-        binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-      }
-      const result = await uploadAdminProductImage({
-        data: { accessToken, contentType: file.type as "image/jpeg" | "image/png" | "image/webp" | "image/avif", base64: btoa(binary) },
+      const extensionByType: Record<string, string> = {
+        "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif",
+      };
+      const path = `products/${crypto.randomUUID()}.${extensionByType[file.type]}`;
+      const { error } = await supabase.storage.from("product-images").upload(path, file, {
+        contentType: file.type, cacheControl: "31536000", upsert: false,
       });
-      setImagesText((current) => [...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), result.url].slice(0, 8).join("\n"));
+      if (error) throw error;
+      const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(path);
+      setImagesText((current) => [...current.split(/[\\n,]/).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\\n"));
       toast.success("تصویر با موفقیت بارگذاری شد.");
-    } catch {
-      toast.error("بارگذاری تصویر انجام نشد؛ اتصال فضای ذخیره‌سازی را بررسی کنید.");
+    } catch (error) {
+      console.error("Admin product image upload failed", error);
+      const message = error instanceof Error ? error.message : "";
+      toast.error(message ? `بارگذاری تصویر ناموفق بود: ${message.slice(0, 140)}` : "بارگذاری تصویر ناموفق بود؛ اتصال فضای ذخیره‌سازی را بررسی کنید.");
     } finally {
       setUploadingImage(false);
     }
