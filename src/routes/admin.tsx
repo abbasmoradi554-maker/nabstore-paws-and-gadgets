@@ -99,8 +99,10 @@ function AdminPage() {
         supabase.from("orders")
           .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
           .order("created_at", { ascending: false })
-          .range(0, 49),
-        9000,
+          .range(0, 49)
+          .abortSignal(AbortSignal.timeout(10000))
+          .setHeader("Authorization", `Bearer ${accessToken}`),
+        11000,
         "orders_timeout",
       );
       if (error) throw error;
@@ -212,7 +214,9 @@ function AdminPage() {
         .from("orders")
         .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
         .order("created_at", { ascending: false })
-        .range(from, from + 49);
+        .range(from, from + 49)
+        .abortSignal(AbortSignal.timeout(10000))
+        .setHeader("Authorization", `Bearer ${sessionData.session.access_token}`);
       if (error) throw error;
       const page = (data ?? []) as Order[];
       setOrders((current) => {
