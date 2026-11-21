@@ -148,6 +148,7 @@ function AdminPage() {
       if (error || !data.session?.access_token) throw new Error("login_failed");
       setLoggedIn(true);
       setPassword("");
+      setLoggedIn(true);
       await loadOrders(data.session.access_token);
       toast.success("با موفقیت وارد پنل مدیریت شدید");
     } catch (error) {
