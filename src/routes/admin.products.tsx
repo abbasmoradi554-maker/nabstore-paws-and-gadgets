@@ -181,7 +181,6 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       setPassword("");
       toast.success("با موفقیت وارد پنل مدیریت شدید");
     } catch {
-      await supabase.auth.signOut();
       toast.error("ورود ناموفق بود؛ ایمیل مدیر و حساب کاربری تأییدشده را بررسی کنید.");
     } finally {
       setBusy(false);
@@ -235,6 +234,10 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       toast.error("فرمت تصویر باید JPG، PNG، WEBP یا AVIF باشد.");
       return;
     }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("حجم هر تصویر نباید بیشتر از ۸ مگابایت باشد.");
+      return;
+    }
     if (!accessToken) return;
     setUploadingImage(true);
     try {
@@ -247,7 +250,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       });
       if (error) throw error;
       const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(path);
-      setImagesText((current) => [...current.split(/[\\n,]/).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\\n"));
+      setImagesText((current) => [...current.split(/[\n,]).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\n"));
       toast.success("تصویر با موفقیت بارگذاری شد.");
     } catch (error) {
       console.error("Admin product image upload failed", error);
@@ -281,7 +284,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     setAccessToken("");
     setItems([]);
     clearForm();
