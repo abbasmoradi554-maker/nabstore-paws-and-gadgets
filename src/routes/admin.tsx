@@ -156,6 +156,10 @@ function AdminPage() {
   const login = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoginError("");
+    if (!email.trim() || !password) {
+      setLoginError("لطفاً ایمیل و رمز عبور را وارد کنید.");
+      return;
+    }
     setSubmitting(true);
     try {
       // A stalled auth request must never leave the login form spinning forever.
@@ -294,15 +298,15 @@ function AdminPage() {
           <h2 className="text-lg font-bold">ورود مدیر</h2>
           <label className="grid gap-2 text-sm font-medium">
             ایمیل
-            <input type="email" required autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
+            <input type="email" autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             رمز عبور
-            <input type="password" required autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
+            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
           </label>
           {loginError ? <p role="alert" aria-live="assertive" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium leading-6 text-destructive">{loginError}</p> : null}
           {submitting ? <p role="status" aria-live="polite" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> درخواست ورود ارسال شد؛ در حال دریافت پاسخ سرور…</p> : null}
-          <Button type="submit" size="lg" disabled={submitting || !email.trim() || !password}>
+          <Button type="submit" size="lg" disabled={submitting}>
             {submitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
             {submitting ? "در حال بررسی اطلاعات…" : "ورود به پنل"}
           </Button>
