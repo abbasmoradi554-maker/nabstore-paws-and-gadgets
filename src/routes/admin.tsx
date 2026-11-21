@@ -100,8 +100,7 @@ function AdminPage() {
           .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
           .order("created_at", { ascending: false })
           .range(0, 49)
-          .abortSignal(AbortSignal.timeout(10000))
-          .setHeader("Authorization", `Bearer ${accessToken}`),
+          .abortSignal(AbortSignal.timeout(10000)),
         11000,
         "orders_timeout",
       );
@@ -215,8 +214,7 @@ function AdminPage() {
         .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
         .order("created_at", { ascending: false })
         .range(from, from + 49)
-        .abortSignal(AbortSignal.timeout(10000))
-        .setHeader("Authorization", `Bearer ${sessionData.session.access_token}`);
+        .abortSignal(AbortSignal.timeout(10000));
       if (error) throw error;
       const page = (data ?? []) as Order[];
       setOrders((current) => {
