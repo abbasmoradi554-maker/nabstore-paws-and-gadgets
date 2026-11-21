@@ -13,7 +13,6 @@ import { deleteAdminProduct, saveAdminProduct, uploadAdminProductImage } from "@
 export const Route = createFileRoute("/admin/products")({
   component: LegacyProductsAdminRedirect,
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
-  component: AdminProductsPage,
 });
 
 type Localized = { fa: string; en: string };
