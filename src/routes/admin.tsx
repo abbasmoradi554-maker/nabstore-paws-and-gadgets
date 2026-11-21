@@ -46,6 +46,14 @@ const statusLabels: Record<string, string> = {
 
 const statusOptions = Object.entries(statusLabels);
 
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  let timer: number | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => { timer = window.setTimeout(() => reject(new Error(message)), ms); }),
+  ]).finally(() => { if (timer !== undefined) window.clearTimeout(timer); });
+}
+
 function formatMoney(value: number) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 }
@@ -61,8 +69,9 @@ function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -72,15 +81,23 @@ function AdminPage() {
   const loadOrders = async (accessToken: string) => {
     setOrdersLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
-        .order("created_at", { ascending: false })
-        .range(0, 49);
+      setOrdersError(false);
+      const { data, error } = await withTimeout(
+        supabase.from("orders")
+          .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+          .order("created_at", { ascending: false })
+          .range(0, 49),
+        9000,
+        "orders_timeout",
+      );
       if (error) throw error;
       setOrders((data ?? []) as Order[]);
       setHasMoreOrders((data?.length ?? 0) === 50);
+      setOrdersError(false);
       setLoggedIn(true);
+    } catch (error) {
+      setOrdersError(true);
+      throw error;
     } finally {
       setOrdersLoading(false);
     }
@@ -178,13 +195,12 @@ function AdminPage() {
   const refresh = async () => {
     setSubmitting(true);
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await withTimeout(supabase.auth.getSession(), 5000, "session_timeout");
       if (!data.session?.access_token) throw new Error("session_expired");
       await loadOrders(data.session.access_token);
       toast.success("فهرست سفارش‌ها به‌روز شد");
     } catch {
-      toast.error("دریافت سفارش‌ها انجام نشد؛ دوباره وارد شوید.");
-      setLoggedIn(false);
+      toast.error("دریافت سفارش‌ها انجام نشد؛ اتصال را بررسی و دوباره تلاش کنید.");
     } finally {
       setSubmitting(false);
     }
@@ -310,7 +326,10 @@ function AdminPage() {
                 {ordersLoading && (
                   <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground"><span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> در حال دریافت سفارش‌ها…</span></td></tr>
                 )}
-                {!ordersLoading && orders.length === 0 && (
+                {!ordersLoading && ordersError && (
+                  <tr><td colSpan={7} className="px-4 py-12 text-center text-destructive">دریافت سفارش‌ها ناموفق بود. اتصال را بررسی و «به‌روزرسانی» را انتخاب کنید.</td></tr>
+                )}
+                {!ordersLoading && !ordersError && orders.length === 0 && (
                   <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">هنوز سفارشی ثبت نشده است.</td></tr>
                 )}
               </tbody>
