@@ -84,6 +84,7 @@ function AdminPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<"orders" | "products">(tab);
 
@@ -154,23 +155,27 @@ function AdminPage() {
 
   const login = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setLoginError("");
     setSubmitting(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error || !data.session?.access_token) throw new Error("login_failed");
+      if (error || !data.session?.access_token) {
+        setLoggedIn(false);
+        setLoginError("ایمیل یا رمز عبور اشتباه است. لطفاً اطلاعات ورود را بررسی کنید.");
+        setPassword("");
+        return;
+      }
       setLoggedIn(true);
       setPassword("");
-      await loadOrders(data.session.access_token);
-      toast.success("با موفقیت وارد پنل مدیریت شدید");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (message.includes("admin_forbidden") || message.includes("Invalid login credentials")) {
-        setLoggedIn(false);
-        await supabase.auth.signOut();
-        toast.error("ایمیل یا رمز عبور مجاز نیست.");
-      } else {
-        toast.error("ورود انجام شد، اما دریافت سفارش‌ها ناموفق بود؛ دوباره به‌روزرسانی کنید.");
+      try {
+        await loadOrders(data.session.access_token);
+        toast.success("با موفقیت وارد پنل مدیریت شدید");
+      } catch {
+        toast.error("ورود موفق بود، اما دریافت سفارش‌ها ناموفق بود؛ از به‌روزرسانی استفاده کنید.");
       }
+    } catch (error) {
+      console.error("Admin login failed", error);
+      setLoginError("ورود انجام نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.");
     } finally {
       setSubmitting(false);
       setLoading(false);
@@ -284,6 +289,7 @@ function AdminPage() {
             رمز عبور
             <input type="password" required autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
           </label>
+          {loginError ? <p role="alert" aria-live="polite" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{loginError}</p> : null}
           <Button type="submit" size="lg" disabled={submitting}>
             {submitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
             ورود به پنل
