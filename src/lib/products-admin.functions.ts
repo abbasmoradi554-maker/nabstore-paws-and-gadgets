@@ -74,7 +74,7 @@ export const deleteAdminProduct = createServerFn({ method: "POST" })
 const imageUploadInput = z.object({
   accessToken: token,
   contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"]),
-  base64: z.string().min(4).max(5_600_000).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+  base64: z.string().min(4).regex(/^[A-Za-z0-9+/]+={0,2}$/),
 });
 
 export const uploadAdminProductImage = createServerFn({ method: "POST" })
@@ -82,7 +82,7 @@ export const uploadAdminProductImage = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const db = await admin(data.accessToken);
     const binary = atob(data.base64);
-    if (binary.length === 0 || binary.length > 4 * 1024 * 1024) throw new Error("image_size_invalid");
+    if (binary.length === 0) throw new Error("image_empty");
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
     const extensionByType: Record<string, string> = {
       "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif",
