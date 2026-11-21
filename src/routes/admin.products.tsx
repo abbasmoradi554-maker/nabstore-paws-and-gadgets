@@ -49,7 +49,7 @@ function formatMoney(value: number) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 }
 
-function AdminProductsPage() {
+export function AdminProductsPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accessToken, setAccessToken] = useState("");
