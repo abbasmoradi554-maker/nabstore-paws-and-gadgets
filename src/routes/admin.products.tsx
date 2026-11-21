@@ -7,6 +7,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedProductImage } from "@/lib/catalog";
 import { deleteAdminProduct, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
@@ -375,7 +376,7 @@ function AdminProductsPage() {
             {visibleItems.map((product) => (
               <article key={product.id} className="flex min-w-0 gap-3 rounded-2xl border p-3 transition hover:border-primary/40">
                 <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted">
-                  {product.images?.[0] ? <img src={product.images[0]} alt={product.name?.fa ?? ""} loading="lazy" className="size-full object-cover" /> : <ImagePlus className="size-6 text-muted-foreground" />}
+                  {product.images?.[0] ? <img src={optimizedProductImage(product.images[0], 240)} alt={product.name?.fa ?? ""} loading="lazy" decoding="async" width={160} height={160} referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }} className="size-full object-cover" /> : <ImagePlus className="size-6 text-muted-foreground" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><p className="truncate font-bold">{product.name?.fa || product.id}</p><span className={product.active ? "rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-700" : "rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"}>{product.active ? "فعال" : "غیرفعال"}</span></div>
