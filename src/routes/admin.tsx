@@ -434,6 +434,7 @@ function AdminPage() {
           </Button>
         </form>
       ) : !loggedIn ? (
+        <>
         <form noValidate autoComplete="on" onSubmit={login} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-bold">ورود مدیر</h2>
           <label className="grid gap-2 text-sm font-medium">
@@ -476,6 +477,7 @@ function AdminPage() {
             </Button>
           </form>
         ) : null}
+        </>
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
