@@ -67,7 +67,7 @@ function AdminProductsPage() {
   const [productsLoading, setProductsLoading] = useState(false);
   const restoredToken = useRef("");
 
-  const load = async (token: string) => {
+  const load = async (_token?: string) => {
     setProductsLoading(true);
     try {
       const { data, error } = await supabase.from("products").select("*").order("updated_at", { ascending: false });
