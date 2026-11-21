@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { LoaderCircle, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -70,6 +70,11 @@ function formatDate(value: string) {
 
 function AdminPage() {
   const { tab } = Route.useSearch();
+  const navigate = useNavigate({ from: "/admin" });
+  const selectTab = (next: "orders" | "products") => {
+    setActiveTab(next);
+    void navigate({ search: (current) => ({ ...current, tab: next }), replace: true });
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -245,13 +250,13 @@ function AdminPage() {
     <section className="container-page max-w-6xl py-8">
       {loggedIn ? (
         <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border bg-card p-2">
-          <Button type="button" variant={activeTab === "orders" ? "default" : "ghost"} onClick={() => setActiveTab("orders")}>مدیریت سفارش‌ها</Button>
-          <Button type="button" variant={activeTab === "products" ? "default" : "ghost"} onClick={() => setActiveTab("products")}>مدیریت محصولات</Button>
+          <Button type="button" variant={activeTab === "orders" ? "default" : "ghost"} onClick={() => selectTab("orders")}>مدیریت سفارش‌ها</Button>
+          <Button type="button" variant={activeTab === "products" ? "default" : "ghost"} onClick={() => selectTab("products")}>مدیریت محصولات</Button>
         </div>
       ) : null}
       {activeTab === "products" && loggedIn ? (
         <Suspense fallback={<div className="flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin" /> در حال باز کردن مدیریت محصولات…</div>}>
-          <LazyAdminProductsPage onBack={() => setActiveTab("orders")} />
+          <LazyAdminProductsPage onBack={() => selectTab("orders")} />
         </Suspense>
       ) : (
       <>
