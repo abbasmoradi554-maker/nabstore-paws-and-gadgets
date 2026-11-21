@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
@@ -11,6 +11,9 @@ import { optimizedProductImage } from "@/lib/catalog";
 import { deleteAdminProduct, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
+  beforeLoad: () => {
+    throw redirect({ to: "/admin", search: { tab: "products" } });
+  },
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
   component: AdminProductsPage,
 });
