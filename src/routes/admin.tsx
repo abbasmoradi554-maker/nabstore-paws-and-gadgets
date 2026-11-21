@@ -36,6 +36,11 @@ type Order = {
   total_toman: number;
   status: string;
   created_at: string;
+  province: string;
+  address: string;
+  postal_code: string;
+  notes: string;
+  items: unknown;
 };
 
 const statusLabels: Record<string, string> = {
@@ -92,6 +97,9 @@ function AdminPage() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [recoveryError, setRecoveryError] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState(false);
@@ -111,7 +119,7 @@ function AdminPage() {
       setOrdersError(false);
       const { data, error } = await withTimeout(
         supabase.from("orders")
-          .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+          .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, status, created_at")
           .order("created_at", { ascending: false })
           .range(0, 49)
           .abortSignal(AbortSignal.timeout(10000)),
@@ -235,7 +243,7 @@ function AdminPage() {
     setRecoveryError("");
     setRecoverySent(false);
     const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setRecoveryError("ابتدا ایمیل معتبر حساب مدیر را وارد کنید.");
       return;
     }
@@ -313,6 +321,13 @@ function AdminPage() {
     }
   };
 
+  const visibleOrders = orders.filter((order) => {
+    const query = orderSearch.trim().toLocaleLowerCase();
+    const matchesText = !query || [order.order_code, order.customer_name, order.mobile, order.city].some((value) => String(value ?? "").toLocaleLowerCase().includes(query));
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesText && matchesStatus;
+  });
+
   const loadMoreOrders = async () => {
     if (loadingMore || !hasMoreOrders) return;
     setLoadingMore(true);
@@ -322,7 +337,7 @@ function AdminPage() {
       const from = orders.length;
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+        .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, status, created_at")
         .order("created_at", { ascending: false })
         .range(from, from + 49)
         .abortSignal(AbortSignal.timeout(10000));
@@ -376,7 +391,7 @@ function AdminPage() {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     setOrders([]);
     setLoggedIn(false);
   };
@@ -493,8 +508,13 @@ function AdminPage() {
             </div>
           </div>
 
+          <div className="mb-4 grid gap-2 rounded-2xl border bg-card p-3 sm:grid-cols-[1fr_220px]">
+            <input value={orderSearch} onChange={(event) => setOrderSearch(event.target.value)} placeholder="جست‌وجوی کد سفارش، نام، موبایل یا شهر…" className="h-10 rounded-xl border bg-background px-3 text-sm outline-none focus:border-ring" />
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-10 rounded-xl border bg-background px-3 text-sm outline-none focus:border-ring"><option value="all">همه وضعیت‌ها</option>{statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+            <p className="text-xs text-muted-foreground sm:col-span-2">{visibleOrders.length} سفارش از {orders.length} سفارش بارگذاری‌شده</p>
+          </div>
           <div className="overflow-x-auto rounded-2xl border bg-card">
-            <table className="w-full min-w-[900px] text-right text-sm">
+            <table className="w-full min-w-[980px] text-right text-sm">
               <thead className="bg-secondary/70 text-muted-foreground">
                 <tr>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">کد سفارش</th>
@@ -504,10 +524,11 @@ function AdminPage() {
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">مبلغ کل</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">وضعیت سفارش</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">تاریخ ثبت</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">جزئیات</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
+                {visibleOrders.map((order) => (
                   <tr key={order.id} className="border-t align-middle">
                     <td dir="ltr" className="whitespace-nowrap px-4 py-3 font-semibold">{order.order_code}</td>
                     <td className="whitespace-nowrap px-4 py-3">{order.customer_name}</td>
@@ -521,7 +542,13 @@ function AdminPage() {
                       </select>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDate(order.created_at)}</td>
+                    <td className="px-4 py-3"><Button type="button" size="sm" variant="outline" onClick={() => setExpandedOrderId((current) => current === order.id ? null : order.id)}>{expandedOrderId === order.id ? "بستن" : "مشاهده"}</Button></td>
                   </tr>
+                  {expandedOrderId === order.id ? <tr className="border-t bg-muted/20"><td colSpan={8} className="p-4"><div className="grid gap-3 text-sm sm:grid-cols-2">
+                    <div><span className="text-muted-foreground">استان:</span> {order.province || "—"}</div><div><span className="text-muted-foreground">کد پستی:</span> <b dir="ltr">{order.postal_code || "—"}</b></div>
+                    <div className="sm:col-span-2"><span className="text-muted-foreground">نشانی:</span> {order.address || "—"}</div><div className="sm:col-span-2"><span className="text-muted-foreground">توضیحات مشتری:</span> {order.notes || "—"}</div>
+                    <div className="sm:col-span-2"><b>اقلام سفارش</b>{Array.isArray(order.items) && order.items.length ? <ul className="mt-2 grid gap-1">{order.items.map((rawItem, index) => { const item = rawItem && typeof rawItem === "object" ? rawItem as Record<string, unknown> : {}; const itemName = String(item.name ?? item.title ?? item.product_name ?? item.productName ?? "محصول"); const quantity = Number(item.quantity ?? item.qty ?? 1); const price = Number(item.price ?? item.unit_price ?? item.unitPrice ?? 0); return <li key={index} className="flex flex-wrap justify-between gap-2 rounded-lg border bg-background px-3 py-2"><span>{itemName} × {Number.isFinite(quantity) ? quantity : 1}</span><span className="text-muted-foreground">{price > 0 ? formatMoney(price) : ""}</span></li>; })}</ul> : <p className="mt-2 text-muted-foreground">جزئیات اقلام در داده این سفارش موجود نیست.</p>}</div>
+                  </div></td></tr> : null}
                 ))}
                 {ordersLoading && (
                   <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground"><span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> در حال دریافت سفارش‌ها…</span></td></tr>
