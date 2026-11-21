@@ -319,11 +319,11 @@ function AdminPage() {
       </div>
 
       {!loggedIn ? (
-        <form noValidate onSubmit={login} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
+        <form noValidate autoComplete="on" onSubmit={login} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-bold">ورود مدیر</h2>
           <label className="grid gap-2 text-sm font-medium">
             ایمیل
-            <input type="email" name="username" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
+            <input type="email" name="username" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" dir="ltr" value={email} onChange={(event) => { const nextEmail = event.target.value; setEmail(nextEmail); if (rememberUsername) { try { localStorage.setItem("nabstore-admin-username", nextEmail); } catch { /* Browser storage may be disabled. */ } } }} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             رمز عبور
@@ -333,10 +333,10 @@ function AdminPage() {
             <input
               type="checkbox"
               checked={rememberUsername}
-              onChange={(event) => setRememberUsername(event.target.checked)}
+              onChange={(event) => { const checked = event.target.checked; setRememberUsername(checked); try { if (checked) { if (email.trim()) localStorage.setItem("nabstore-admin-username", email.trim()); localStorage.setItem("nabstore-admin-remember-username", "true"); } else { localStorage.removeItem("nabstore-admin-username"); localStorage.removeItem("nabstore-admin-remember-username"); } } catch { /* Browser storage may be disabled. */ } }}
               className="size-4 accent-primary"
             />
-            مرا به خاطر بسپار (ذخیره ایمیل و تکمیل خودکار رمز توسط مرورگر)
+            مرا به خاطر بسپار (ذخیره ایمیل و پیشنهاد ذخیره رمز در مرورگر)
           </label>
           {loginError ? <p role="alert" aria-live="assertive" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium leading-6 text-destructive">{loginError}</p> : null}
           {submitting ? <p role="status" aria-live="polite" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> درخواست ورود ارسال شد؛ در حال دریافت پاسخ سرور…</p> : null}
