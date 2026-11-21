@@ -200,13 +200,13 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       if (draft.old_price !== null && draft.old_price <= draft.price) {
         throw new Error("old_price_must_exceed_price");
       }
-      await saveAdminProduct({
+      await withTimeout(saveAdminProduct({
         data: {
           accessToken, ...draft, oldPrice: draft.old_price,
           subcategory: subcategory.trim() || null, specs, options, tags, images,
           addedOrder: draft.added_order || 0,
         },
-      });
+      }), 15000, "product_save_timeout");
       await load();
       clearForm();
       toast.success("محصول با موفقیت ذخیره شد");
@@ -245,9 +245,9 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
         "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif",
       };
       const path = `products/${crypto.randomUUID()}.${extensionByType[file.type]}`;
-      const { error } = await supabase.storage.from("product-images").upload(path, file, {
+      const { error } = await withTimeout(supabase.storage.from("product-images").upload(path, file, {
         contentType: file.type, cacheControl: "31536000", upsert: false,
-      });
+      }), 25000, "image_upload_timeout");
       if (error) throw error;
       const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(path);
       setImagesText((current) => [...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\n"));
@@ -274,7 +274,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
   const remove = async (id: string) => {
     if (!window.confirm("این محصول برای همیشه از فهرست محصولات حذف شود؟")) return;
     try {
-      await deleteAdminProduct({ data: { accessToken, id } });
+      await withTimeout(deleteAdminProduct({ data: { accessToken, id } }), 15000, "product_delete_timeout");
       await load(accessToken);
       if (draft.id === id) clearForm();
       toast.success("محصول حذف شد");
