@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ProductGrid } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { discountPercent, getCategory, hasDiscount, type OptionType, type Product } from "@/data/products";
-import { useCatalogProducts } from "@/lib/catalog";
+import { optimizedProductImage, useCatalogProducts } from "@/lib/catalog";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -87,7 +87,9 @@ function ProductDetail({ product, allProducts }: { product: Product; allProducts
         <div>
           <div className="relative aspect-square overflow-hidden rounded-3xl border bg-sand">
             <img
-              src={product.images[active] ?? product.images[0] ?? "/favicon.svg"}
+              src={optimizedProductImage(product.images[active] ?? product.images[0] ?? "/favicon.svg", 1200)}
+              onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }}
+              referrerPolicy="no-referrer"
               alt={l(product.name)}
               width={1024}
               height={1024}
@@ -112,7 +114,7 @@ function ProductDetail({ product, allProducts }: { product: Product; allProducts
                     i === active ? "border-primary" : "border-transparent",
                   )}
                 >
-                  <img src={img} alt="" loading="lazy" width={160} height={160} className="size-full object-cover" />
+                  <img src={optimizedProductImage(img, 180)} alt="" loading="lazy" width={160} height={160} referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }} className="size-full object-cover" />
                 </button>
               ))}
             </div>
