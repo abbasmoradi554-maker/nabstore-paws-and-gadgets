@@ -1,4 +1,4 @@
-import { createFileRoute, useRouterState } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { LoaderCircle, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -67,7 +67,7 @@ function AdminPage() {
   const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const isProductsPath = useRouterState({ select: (state) => state.location.pathname === "/admin/products" });
+  const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
 
   const loadOrders = async (accessToken: string) => {
     setOrdersLoading(true);
@@ -98,7 +98,7 @@ function AdminPage() {
       try {
         // Session restoration is local-storage based; don't hold the whole page
         // behind the orders API request.
-        const { data } = await withTimeout(supabase.auth.getSession(), 2500, "session_timeout");
+        const { data } = await withTimeout(supabase.auth.getSession(), 1800, "session_timeout");
         const token = data.session?.access_token;
         if (token && active) {
           setLoggedIn(true);
@@ -216,20 +216,24 @@ function AdminPage() {
     setLoggedIn(false);
   };
 
-  if (isProductsPath) {
-    return (
-      <Suspense fallback={<section className="container-page flex min-h-[50vh] items-center justify-center"><LoaderCircle className="size-7 animate-spin text-primary" /></section>}>
-        <LazyAdminProductsPage />
-      </Suspense>
-    );
-  }
-
   if (loading) {
     return <section className="container-page flex min-h-[50vh] items-center justify-center"><LoaderCircle className="size-7 animate-spin text-primary" /></section>;
   }
 
   return (
-    <section className="container-page max-w-6xl py-10">
+    <section className="container-page max-w-6xl py-8">
+      {loggedIn ? (
+        <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border bg-card p-2">
+          <Button type="button" variant={activeTab === "orders" ? "default" : "ghost"} onClick={() => setActiveTab("orders")}>مدیریت سفارش‌ها</Button>
+          <Button type="button" variant={activeTab === "products" ? "default" : "ghost"} onClick={() => setActiveTab("products")}>مدیریت محصولات</Button>
+        </div>
+      ) : null}
+      {activeTab === "products" && loggedIn ? (
+        <Suspense fallback={<div className="flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin" /> در حال باز کردن مدیریت محصولات…</div>}>
+          <LazyAdminProductsPage onBack={() => setActiveTab("orders")} />
+        </Suspense>
+      ) : (
+      <>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="rounded-2xl bg-primary-soft p-3 text-primary"><ShieldCheck className="size-6" /></div>
@@ -238,7 +242,7 @@ function AdminPage() {
             <p className="mt-1 text-sm text-muted-foreground">پنل خصوصی مدیریت فروشگاه</p>
           </div>
         </div>
-        <Button asChild variant="outline"><a href="/admin/products">مدیریت محصولات</a></Button>
+        {loggedIn ? <span className="text-sm text-muted-foreground">داشبورد یکپارچه ناب استور</span> : null}
       </div>
 
       {!loggedIn ? (
@@ -321,6 +325,8 @@ function AdminPage() {
             </div>
           )}
         </>
+      )}
+      </>
       )}
     </section>
   );
