@@ -250,7 +250,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       });
       if (error) throw error;
       const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(path);
-      setImagesText((current) => [...current.split(/[\n,]).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\n"));
+      setImagesText((current) => [...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\n"));
       toast.success("تصویر با موفقیت بارگذاری شد.");
     } catch (error) {
       console.error("Admin product image upload failed", error);
