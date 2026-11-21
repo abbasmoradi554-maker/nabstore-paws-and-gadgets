@@ -71,7 +71,7 @@ function AdminProductsPage() {
   const load = async (_token?: string) => {
     setProductsLoading(true);
     try {
-      const { data, error } = await supabase.from("products").select("*").order("updated_at", { ascending: false });
+      const { data, error } = await supabase.from("products").select("id, name, price, old_price, category, subcategory, short, description, specs, options, tags, added_order, images, active, updated_at").order("updated_at", { ascending: false }).limit(200);
       if (error) throw error;
       setItems((data ?? []) as Product[]);
     } finally {
