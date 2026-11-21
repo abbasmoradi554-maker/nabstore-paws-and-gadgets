@@ -160,6 +160,10 @@ function AdminPage() {
       setLoginError("لطفاً ایمیل و رمز عبور را وارد کنید.");
       return;
     }
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+      setLoginError("فرمت ایمیل صحیح نیست؛ ایمیل را به شکل name@example.com وارد کنید.");
+      return;
+    }
     setSubmitting(true);
     try {
       // A stalled auth request must never leave the login form spinning forever.
@@ -294,11 +298,11 @@ function AdminPage() {
       </div>
 
       {!loggedIn ? (
-        <form onSubmit={login} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
+        <form noValidate onSubmit={login} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-bold">ورود مدیر</h2>
           <label className="grid gap-2 text-sm font-medium">
             ایمیل
-            <input type="email" autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
+            <input type="text" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             رمز عبور
