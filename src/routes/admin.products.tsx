@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
   Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X,
@@ -64,9 +64,8 @@ function AdminProductsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [busy, setBusy] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [loading, setLoading] = useState(true);
-
   const [productsLoading, setProductsLoading] = useState(false);
+  const restoredToken = useRef("");
 
   const load = async (token: string) => {
     setProductsLoading(true);
@@ -81,32 +80,44 @@ function AdminProductsPage() {
 
   useEffect(() => {
     let live = true;
-    const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string) =>
-      Promise.race<T>([
-        promise,
-        new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(label)), ms)),
-      ]);
-    void (async () => {
-      try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 2500, "session_timeout");
-        const token = data.session?.access_token;
-        if (token && live) {
-          // Render the admin workspace immediately; fetch catalog data in the background.
-          setAccessToken(token);
-          setLoading(false);
-          void withTimeout(load(token), 12000, "products_timeout").catch((error) => {
-            console.error("Admin products initial load failed", error);
-            if (live) toast.error("پنل باز شد، اما دریافت محصولات طول کشید؛ از تازه‌سازی استفاده کنید.");
-          });
-        }
-      } catch (error) {
-        console.error("Admin session restore failed", error);
-        if (live) toast.error("بازیابی نشست طول کشید؛ لطفاً دوباره وارد شوید.");
-      } finally {
-        if (live) setLoading(false);
+
+    const restoreSession = (token: string | undefined) => {
+      if (!live || !token || restoredToken.current === token) return;
+      restoredToken.current = token;
+      setAccessToken(token);
+      // Never block the whole products workspace on session restoration or catalog I/O.
+      window.setTimeout(() => {
+        if (!live) return;
+        void load().catch((error) => {
+          console.error("Admin products initial load failed", error);
+          if (live) toast.error("ورود انجام شد، اما دریافت محصولات ناموفق بود؛ از تازه‌سازی استفاده کنید.");
+        });
+      }, 0);
+    };
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!live) return;
+      if (session?.access_token) {
+        restoreSession(session.access_token);
+      } else if (event === "SIGNED_OUT") {
+        restoredToken.current = "";
+        setAccessToken("");
+        setItems([]);
       }
-    })();
-    return () => { live = false; };
+    });
+
+    // This request is deliberately non-blocking. If storage/auth restoration is slow,
+    // the login form remains available instead of leaving the user on an endless spinner.
+    void supabase.auth.getSession()
+      .then(({ data }) => restoreSession(data.session?.access_token))
+      .catch((error) => {
+        console.error("Admin session restore failed", error);
+      });
+
+    return () => {
+      live = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const visibleItems = useMemo(() => {
@@ -137,8 +148,12 @@ function AdminProductsPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error || !data.session) throw error ?? new Error("login_failed");
-      await load(data.session.access_token);
       setAccessToken(data.session.access_token);
+      restoredToken.current = data.session.access_token;
+      void load().catch((error) => {
+        console.error("Admin products login load failed", error);
+        toast.error("ورود انجام شد، اما دریافت فهرست محصولات ناموفق بود؛ از تازه‌سازی استفاده کنید.");
+      });
       setPassword("");
       toast.success("با موفقیت وارد پنل مدیریت شدید");
     } catch {
@@ -146,7 +161,6 @@ function AdminProductsPage() {
       toast.error("ورود ناموفق بود؛ ایمیل مدیر و حساب کاربری تأییدشده را بررسی کنید.");
     } finally {
       setBusy(false);
-      setLoading(false);
     }
   };
 
@@ -170,7 +184,7 @@ function AdminProductsPage() {
           addedOrder: draft.added_order || 0,
         },
       });
-      await load(accessToken);
+      await load();
       clearForm();
       toast.success("محصول با موفقیت ذخیره شد");
     } catch (error) {
@@ -249,10 +263,6 @@ function AdminProductsPage() {
     setItems([]);
     clearForm();
   };
-
-  if (loading && !accessToken) {
-    return <main className="container-page flex min-h-[65vh] items-center justify-center py-12"><div className="flex items-center gap-3 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin text-primary" /> در حال بازیابی نشست مدیریت…</div></main>;
-  }
 
   if (!accessToken) {
     return (
