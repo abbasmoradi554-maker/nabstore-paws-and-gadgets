@@ -5,9 +5,23 @@ import { categories, type Product, type CategorySlug, type ProductTag, type Opti
 type Row = {
   id:string; name:{fa:string;en:string}; price:number; old_price:number|null; category:string;
   subcategory:string|null; short:{fa:string;en:string}; description:{fa:string;en:string};
-  specs:Product["specs"]; options:Array<{type:string;values:Array<{fa:string;en:string}>}>;
+  specs:Product["specs"]; options:Array<{type:string;values:Array<{fa:string;en:string}>>>;
   images:string[]; tags:string[]; added_order:number;
 };
+
+/** Serve third-party product photos through a free image CDN, resized and converted to WebP. */
+export function optimizedProductImage(url: string, width = 900): string {
+  if (!url || url.startsWith("/") || url.startsWith("data:")) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return url;
+    if (parsed.hostname === "images.weserv.nl") return url;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}&w=${width}&h=${width}&fit=contain&output=webp&q=80`;
+  } catch {
+    return url;
+  }
+}
+
 function mapProduct(row:Row):Product {
   const category = categories.some(c=>c.slug===row.category) ? row.category as CategorySlug : "gadgets";
   const allowedOptions:OptionType[]=["model","color","size","design"];
