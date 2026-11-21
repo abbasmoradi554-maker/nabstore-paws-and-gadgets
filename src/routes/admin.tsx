@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
-import { LoaderCircle, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
+import { KeyRound, LoaderCircle, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const LazyAdminProductsPage = lazy(() =>
 export const Route = createFileRoute("/admin")({
   validateSearch: (search: Record<string, unknown>) => ({
     tab: search.tab === "products" ? "products" as const : "orders" as const,
+    recovery: search.recovery === "1",
   }),
   head: () => ({
     meta: [
@@ -69,7 +70,7 @@ function formatDate(value: string) {
 }
 
 function AdminPage() {
-  const { tab } = Route.useSearch();
+  const { tab, recovery: recoverySearch } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
   const selectTab = (next: "orders" | "products") => {
     setActiveTab(next);
@@ -82,6 +83,14 @@ function AdminPage() {
     try { return localStorage.getItem("nabstore-admin-remember-username") === "true"; } catch { return false; }
   });
   const [password, setPassword] = useState("");
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [sendingRecovery, setSendingRecovery] = useState(false);
+  const [recoverySent, setRecoverySent] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(() => recoverySearch || new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [recoveryError, setRecoveryError] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -136,7 +145,7 @@ function AdminPage() {
         // behind the orders API request.
         const { data } = await withTimeout(supabase.auth.getSession(), 1800, "session_timeout");
         const token = data.session?.access_token;
-        if (token && active) {
+        if (token && active && !recoveryMode) {
           setLoggedIn(true);
           setLoading(false);
           void withTimeout(loadOrders(), 10000, "orders_timeout").catch((error) => {
@@ -157,7 +166,7 @@ function AdminPage() {
     })();
 
     return () => { active = false; };
-  }, []);
+  }, [recoveryMode]);
 
   const login = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -218,6 +227,89 @@ function AdminPage() {
     } finally {
       setSubmitting(false);
       setLoading(false);
+    }
+  };
+
+  const requestPasswordReset = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setRecoveryError("");
+    setRecoverySent(false);
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      setRecoveryError("ابتدا ایمیل معتبر حساب مدیر را وارد کنید.");
+      return;
+    }
+    setSendingRecovery(true);
+    try {
+      const redirectTo = new URL("/admin?recovery=1", window.location.origin).toString();
+      const { error } = await withTimeout(
+        supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo }),
+        15000,
+        "recovery_timeout",
+      );
+      if (error) throw error;
+      setRecoverySent(true);
+    } catch (error) {
+      console.error("Admin password recovery request failed", error);
+      setRecoveryError(error instanceof Error && error.message === "recovery_timeout"
+        ? "پاسخ سرویس بازیابی دیر رسید. کمی بعد دوباره تلاش کنید."
+        : "ارسال ایمیل بازیابی انجام نشد. تنظیمات ایمیل و اتصال سرویس را بررسی کنید.");
+    } finally {
+      setSendingRecovery(false);
+    }
+  };
+
+  const saveNewPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setRecoveryError("");
+    if (newPassword.length < 8) {
+      setRecoveryError("رمز جدید باید حداقل ۸ نویسه داشته باشد.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setRecoveryError("تکرار رمز عبور با رمز جدید یکسان نیست.");
+      return;
+    }
+    setUpdatingPassword(true);
+    try {
+      const { data: sessionData, error: sessionError } = await withTimeout(
+        supabase.auth.getSession(),
+        7000,
+        "recovery_session_timeout",
+      );
+      if (sessionError || !sessionData.session?.access_token) throw new Error("recovery_session_missing");
+      const { error } = await withTimeout(
+        supabase.auth.updateUser({ password: newPassword }),
+        15000,
+        "password_update_timeout",
+      );
+      if (error) throw error;
+      setPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setRecoveryMode(false);
+      setForgotPassword(false);
+      void navigate({ search: (current) => ({ ...current, recovery: false, tab: "orders" }), replace: true });
+      setLoggedIn(true);
+      setSubmitting(true);
+      try {
+        await loadOrders();
+        toast.success("رمز عبور با موفقیت تغییر کرد و وارد پنل شدید.");
+      } catch {
+        toast.success("رمز عبور تغییر کرد؛ دریافت سفارش‌ها را می‌توانید با به‌روزرسانی دوباره انجام دهید.");
+      } finally {
+        setSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Admin password update failed", error);
+      const message = error instanceof Error ? error.message : "";
+      setRecoveryError(message === "recovery_session_missing"
+        ? "لینک بازیابی معتبر نیست یا منقضی شده است. از صفحه ورود دوباره درخواست لینک بدهید."
+        : message === "recovery_session_timeout" || message === "password_update_timeout"
+          ? "پاسخ سرویس بازیابی دیر رسید. صفحه را تازه‌سازی و در صورت نیاز لینک جدید درخواست کنید."
+          : "تغییر رمز انجام نشد؛ ممکن است لینک منقضی شده باشد. یک لینک بازیابی تازه درخواست کنید.");
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -318,7 +410,30 @@ function AdminPage() {
         {loggedIn ? <span className="text-sm text-muted-foreground">داشبورد یکپارچه ناب استور</span> : null}
       </div>
 
-      {!loggedIn ? (
+      {recoveryMode ? (
+        <form noValidate onSubmit={saveNewPassword} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-primary-soft p-3 text-primary"><KeyRound className="size-5" /></div>
+            <div>
+              <h2 className="text-lg font-bold">تعیین رمز عبور جدید</h2>
+              <p className="text-sm text-muted-foreground">پس از بازکردن لینک ایمیل، رمز تازه را وارد کنید.</p>
+            </div>
+          </div>
+          <label className="grid gap-2 text-sm font-medium">
+            رمز عبور جدید
+            <input type="password" name="new-password" autoComplete="new-password" minLength={8} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            تکرار رمز عبور جدید
+            <input type="password" name="confirm-new-password" autoComplete="new-password" minLength={8} required value={confirmNewPassword} onChange={(event) => setConfirmNewPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
+          </label>
+          {recoveryError ? <p role="alert" aria-live="assertive" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive">{recoveryError}</p> : null}
+          <Button type="submit" size="lg" disabled={updatingPassword}>
+            {updatingPassword ? <LoaderCircle className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+            {updatingPassword ? "در حال ذخیره رمز جدید…" : "ذخیره رمز جدید"}
+          </Button>
+        </form>
+      ) : !loggedIn ? (
         <form noValidate autoComplete="on" onSubmit={login} className="mx-auto grid max-w-md gap-4 rounded-3xl border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-bold">ورود مدیر</h2>
           <label className="grid gap-2 text-sm font-medium">
@@ -345,7 +460,22 @@ function AdminPage() {
             {submitting ? "در حال بررسی اطلاعات…" : "ورود به پنل"}
           </Button>
           <p className="text-xs leading-6 text-muted-foreground">دسترسی فقط برای ایمیل مدیر تعریف‌شده در تنظیمات امن سرور امکان‌پذیر است.</p>
+          <button type="button" onClick={() => { setForgotPassword((value) => !value); setRecoverySent(false); setRecoveryError(""); }} className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+            {forgotPassword ? "بازگشت به ورود" : "رمز عبور را فراموش کرده‌ام"}
+          </button>
         </form>
+        {forgotPassword ? (
+          <form noValidate onSubmit={requestPasswordReset} className="mx-auto mt-4 grid max-w-md gap-3 rounded-2xl border bg-card p-5">
+            <h3 className="font-semibold">بازیابی رمز عبور مدیر</h3>
+            <p className="text-sm leading-6 text-muted-foreground">لینک امن تغییر رمز به ایمیل همین حساب ارسال می‌شود. اگر ایمیل را پیدا نکردید، پوشه هرزنامه را هم بررسی کنید.</p>
+            {recoveryError ? <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{recoveryError}</p> : null}
+            {recoverySent ? <p role="status" className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm leading-6">اگر این ایمیل به حساب مدیر متصل باشد، لینک بازیابی ارسال شده است. ایمیل را باز کنید و لینک را روی همین مرورگر دنبال کنید.</p> : null}
+            <Button type="submit" variant="outline" disabled={sendingRecovery || recoverySent}>
+              {sendingRecovery ? <LoaderCircle className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+              {sendingRecovery ? "در حال ارسال لینک…" : recoverySent ? "لینک ارسال شد" : "ارسال لینک بازیابی"}
+            </Button>
+          </form>
+        ) : null}
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
