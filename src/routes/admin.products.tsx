@@ -87,7 +87,7 @@ function AdminProductsPage() {
       ]);
     void (async () => {
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 8000, "session_timeout");
+        const { data } = await withTimeout(supabase.auth.getSession(), 2500, "session_timeout");
         const token = data.session?.access_token;
         if (token && live) {
           // Render the admin workspace immediately; fetch catalog data in the background.
@@ -248,6 +248,10 @@ function AdminProductsPage() {
     setItems([]);
     clearForm();
   };
+
+  if (loading && !accessToken) {
+    return <main className="container-page flex min-h-[65vh] items-center justify-center py-12"><div className="flex items-center gap-3 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin text-primary" /> در حال بازیابی نشست مدیریت…</div></main>;
+  }
 
   if (!accessToken) {
     return (
