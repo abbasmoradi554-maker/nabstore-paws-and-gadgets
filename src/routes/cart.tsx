@@ -26,7 +26,16 @@ function CartPage() {
   const cart = useCart();
   const catalog = useCatalogProducts();
 
-  if (!cart.ready) return <section className="container-page min-h-[40vh] pt-10" />;
+  if (!cart.ready) return (
+    <section className="container-page min-h-[40vh] pt-10 text-center">
+      {cart.catalogError ? (
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-6">
+          <p className="text-sm text-destructive">دریافت محصولات انجام نشد؛ سبد خرید شما حذف نشده است.</p>
+          <Button className="mt-4" onClick={cart.retryCatalog}>تلاش دوباره</Button>
+        </div>
+      ) : <p className="text-sm text-muted-foreground">در حال دریافت اطلاعات محصولات…</p>}
+    </section>
+  );
 
   if (cart.items.length === 0) {
     return (
