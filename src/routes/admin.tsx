@@ -374,12 +374,13 @@ function AdminPage() {
     try {
       const { data } = await supabase.auth.getSession();
       if (!data.session?.access_token) throw new Error("session_expired");
-      const { data: updated, error } = await supabase
+      const { data: updated, error } = await withTimeout(supabase
         .from("orders")
         .update({ status: status as keyof typeof statusLabels & string })
         .eq("id", orderId)
         .select("id, status")
-        .single();
+        .single()
+        .abortSignal(AbortSignal.timeout(10000)), 11000, "order_update_timeout");
       if (error || !updated) throw error ?? new Error("order_update_failed");
       setOrders((current) => current.map((order) =>
         order.id === orderId ? { ...order, status: updated.status } : order
