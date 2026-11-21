@@ -1,10 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { LoaderCircle, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+
+// Defensive route fallback: some Workers preview builds have served the /admin
+// component at /admin/products even while resolving the products route metadata.
+const LazyAdminProductsPage = lazy(() =>
+  import("./admin.products").then((module) => ({ default: module.AdminProductsPage })),
+);
 
 
 export const Route = createFileRoute("/admin")({
@@ -61,6 +67,7 @@ function AdminPage() {
   const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const isProductsPath = useRouterState({ select: (state) => state.location.pathname === "/admin/products" });
 
   const loadOrders = async (accessToken: string) => {
     setOrdersLoading(true);
@@ -208,6 +215,14 @@ function AdminPage() {
     setOrders([]);
     setLoggedIn(false);
   };
+
+  if (isProductsPath) {
+    return (
+      <Suspense fallback={<section className="container-page flex min-h-[50vh] items-center justify-center"><LoaderCircle className="size-7 animate-spin text-primary" /></section>}>
+        <LazyAdminProductsPage />
+      </Suspense>
+    );
+  }
 
   if (loading) {
     return <section className="container-page flex min-h-[50vh] items-center justify-center"><LoaderCircle className="size-7 animate-spin text-primary" /></section>;
