@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { deleteAdminProduct, listAdminProducts, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
+import { deleteAdminProduct, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
@@ -71,8 +71,9 @@ function AdminProductsPage() {
   const load = async (token: string) => {
     setProductsLoading(true);
     try {
-      const result = await listAdminProducts({ data: { accessToken: token } });
-      setItems(result.products as Product[]);
+      const { data, error } = await supabase.from("products").select("*").order("updated_at", { ascending: false });
+      if (error) throw error;
+      setItems((data ?? []) as Product[]);
     } finally {
       setProductsLoading(false);
     }
