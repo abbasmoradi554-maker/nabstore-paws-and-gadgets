@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getCategory, discountPercent, hasDiscount, type Product } from "@/data/products";
 import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
+import { optimizedProductImage } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
 export function ProductCard({ product, className }: { product: Product; className?: string }) {
@@ -24,7 +25,9 @@ export function ProductCard({ product, className }: { product: Product; classNam
     >
       <Link to="/product/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden bg-sand">
         <img
-          src={product.images[0]}
+          src={optimizedProductImage(product.images[0], 640)}
+          onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }}
+          referrerPolicy="no-referrer"
           alt={l(product.name)}
           loading="lazy"
           decoding="async"
