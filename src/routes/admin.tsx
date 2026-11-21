@@ -530,6 +530,7 @@ function AdminPage() {
               </thead>
               <tbody>
                 {visibleOrders.map((order) => (
+                  <>
                   <tr key={order.id} className="border-t align-middle">
                     <td dir="ltr" className="whitespace-nowrap px-4 py-3 font-semibold">{order.order_code}</td>
                     <td className="whitespace-nowrap px-4 py-3">{order.customer_name}</td>
@@ -550,6 +551,7 @@ function AdminPage() {
                     <div className="sm:col-span-2"><span className="text-muted-foreground">نشانی:</span> {order.address || "—"}</div><div className="sm:col-span-2"><span className="text-muted-foreground">توضیحات مشتری:</span> {order.notes || "—"}</div>
                     <div className="sm:col-span-2"><b>اقلام سفارش</b>{Array.isArray(order.items) && order.items.length ? <ul className="mt-2 grid gap-1">{order.items.map((rawItem, index) => { const item = rawItem && typeof rawItem === "object" ? rawItem as Record<string, unknown> : {}; const itemName = String(item.nameFa ?? item.name ?? item.title ?? item.product_name ?? item.productName ?? "محصول"); const quantity = Number(item.quantity ?? item.qty ?? 1); const price = Number(item.price ?? item.unit_price ?? item.unitPrice ?? 0); const lineTotal = Number(item.lineTotal ?? 0); return <li key={index} className="flex flex-wrap justify-between gap-2 rounded-lg border bg-background px-3 py-2"><span>{itemName} × {Number.isFinite(quantity) ? quantity : 1}</span><span className="text-muted-foreground">{lineTotal > 0 ? formatMoney(lineTotal) : price > 0 ? formatMoney(price) : ""}</span></li>; })}</ul> : <p className="mt-2 text-muted-foreground">جزئیات اقلام در داده این سفارش موجود نیست.</p>}</div>
                   </div></td></tr> : null}
+                  </>
                 ))}
                 {ordersLoading && (
                   <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground"><span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> در حال دریافت سفارش‌ها…</span></td></tr>
