@@ -75,7 +75,12 @@ function AdminPage() {
     setActiveTab(next);
     void navigate({ search: (current) => ({ ...current, tab: next }), replace: true });
   };
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    try { return localStorage.getItem("nabstore-admin-username") ?? ""; } catch { return ""; }
+  });
+  const [rememberUsername, setRememberUsername] = useState(() => {
+    try { return localStorage.getItem("nabstore-admin-remember-username") === "true"; } catch { return false; }
+  });
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -182,6 +187,17 @@ function AdminPage() {
         return;
       }
       setLoggedIn(true);
+      try {
+        if (rememberUsername) {
+          localStorage.setItem("nabstore-admin-username", email.trim());
+          localStorage.setItem("nabstore-admin-remember-username", "true");
+        } else {
+          localStorage.removeItem("nabstore-admin-username");
+          localStorage.removeItem("nabstore-admin-remember-username");
+        }
+      } catch {
+        // Storage may be disabled; browser password managers can still offer to save credentials.
+      }
       setPassword("");
       // Complete authentication before loading the dashboard data. The admin
       // screen becomes usable immediately while orders load independently.
@@ -307,11 +323,20 @@ function AdminPage() {
           <h2 className="text-lg font-bold">ورود مدیر</h2>
           <label className="grid gap-2 text-sm font-medium">
             ایمیل
-            <input type="text" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
+            <input type="email" name="username" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" dir="ltr" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 rounded-xl border bg-background px-4 text-left outline-none focus:border-ring" />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             رمز عبور
-            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
+            <input type="password" name="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={rememberUsername}
+              onChange={(event) => setRememberUsername(event.target.checked)}
+              className="size-4 accent-primary"
+            />
+            مرا به خاطر بسپار (ذخیره ایمیل و تکمیل خودکار رمز توسط مرورگر)
           </label>
           {loginError ? <p role="alert" aria-live="assertive" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium leading-6 text-destructive">{loginError}</p> : null}
           {submitting ? <p role="status" aria-live="polite" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> درخواست ورود ارسال شد؛ در حال دریافت پاسخ سرور…</p> : null}
