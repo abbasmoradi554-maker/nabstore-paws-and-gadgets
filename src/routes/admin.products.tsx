@@ -235,10 +235,6 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       toast.error("فرمت تصویر باید JPG، PNG، WEBP یا AVIF باشد.");
       return;
     }
-    if (file.size > 4 * 1024 * 1024) {
-      toast.error("حجم هر تصویر نباید بیشتر از ۴ مگابایت باشد.");
-      return;
-    }
     if (!accessToken) return;
     setUploadingImage(true);
     try {
@@ -367,7 +363,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
           <Field label="گزینه‌های قابل انتخاب (JSON)" hint='نوع گزینه: model، color، size یا design'>
             <textarea value={optionsJson} onChange={(e) => setOptionsJson(e.target.value)} rows={5} dir="ltr" spellCheck={false} className={areaClass + " font-mono text-xs"} />
           </Field>
-          <Field label="بارگذاری تصویر از دستگاه" hint="JPG، PNG، WEBP یا AVIF · حداکثر ۴ مگابایت برای هر تصویر">
+          <Field label="بارگذاری تصویر از دستگاه" hint="JPG، PNG، WEBP یا AVIF">
             <div className="flex flex-wrap items-center gap-3"><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(e) => void uploadImage(e)} disabled={uploadingImage || imagesText.split(/[\n,]/).filter((v) => v.trim()).length >= 8} className="block w-full text-sm file:ml-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary disabled:opacity-50" />{uploadingImage ? <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> در حال بارگذاری...</span> : null}</div>
           </Field>
           <Field label="آدرس تصاویر (قابل ویرایش)" hint="هر خط یک لینک مستقیم تصویر؛ حداکثر ۸ تصویر.">
