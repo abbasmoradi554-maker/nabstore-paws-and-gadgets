@@ -57,6 +57,8 @@ function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -67,9 +69,10 @@ function AdminPage() {
         .from("orders")
         .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .range(0, 49);
       if (error) throw error;
       setOrders((data ?? []) as Order[]);
+      setHasMoreOrders((data?.length ?? 0) === 50);
       setLoggedIn(true);
     } finally {
       setOrdersLoading(false);
@@ -135,6 +138,33 @@ function AdminPage() {
     } finally {
       setSubmitting(false);
       setLoading(false);
+    }
+  };
+
+  const loadMoreOrders = async () => {
+    if (loadingMore || !hasMoreOrders) return;
+    setLoadingMore(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session?.access_token) throw new Error("session_expired");
+      const from = orders.length;
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+        .order("created_at", { ascending: false })
+        .range(from, from + 49);
+      if (error) throw error;
+      const page = (data ?? []) as Order[];
+      setOrders((current) => {
+        const seen = new Set(current.map((order) => order.id));
+        return [...current, ...page.filter((order) => !seen.has(order.id))];
+      });
+      setHasMoreOrders(page.length === 50);
+    } catch (error) {
+      console.error("Admin older orders load failed", error);
+      toast.error("دریافت سفارش‌های قدیمی‌تر انجام نشد.");
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -218,7 +248,7 @@ function AdminPage() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
             <div>
               <p className="font-semibold">آخرین سفارش‌ها</p>
-              <p className="text-xs text-muted-foreground">۱۰۰ سفارش اخیر · نمایش فقط‌خواندنی اطلاعات</p>
+              <p className="text-xs text-muted-foreground">۵۰ سفارش اخیر در هر مرحله · دریافت تدریجی سوابق</p>
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={refresh} disabled={submitting}>
@@ -267,6 +297,14 @@ function AdminPage() {
               </tbody>
             </table>
           </div>
+          {hasMoreOrders && (
+            <div className="mt-4 flex justify-center">
+              <Button type="button" variant="outline" onClick={() => void loadMoreOrders()} disabled={loadingMore}>
+                {loadingMore ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {loadingMore ? "در حال دریافت..." : "نمایش ۵۰ سفارش قدیمی‌تر"}
+              </Button>
+            </div>
+          )}
         </>
       )}
     </section>
