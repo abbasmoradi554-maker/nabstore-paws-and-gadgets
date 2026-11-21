@@ -91,7 +91,7 @@ function AdminPage() {
   // Keep the visible tab synchronized with browser back/forward navigation.
   useEffect(() => setActiveTab(tab), [tab]);
 
-  const loadOrders = async (accessToken: string) => {
+  const loadOrders = async () => {
     setOrdersLoading(true);
     try {
       setOrdersError(false);
@@ -134,7 +134,7 @@ function AdminPage() {
         if (token && active) {
           setLoggedIn(true);
           setLoading(false);
-          void withTimeout(loadOrders(token), 10000, "orders_timeout").catch((error) => {
+          void withTimeout(loadOrders(), 10000, "orders_timeout").catch((error) => {
             if (active) {
               console.error("Admin orders initial load failed", error);
               toast.error("دریافت سفارش‌ها طول کشید؛ از دکمه به‌روزرسانی استفاده کنید.");
@@ -161,7 +161,7 @@ function AdminPage() {
       setLoginError("لطفاً ایمیل و رمز عبور را وارد کنید.");
       return;
     }
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setLoginError("فرمت ایمیل صحیح نیست؛ ایمیل را به شکل name@example.com وارد کنید.");
       return;
     }
@@ -183,8 +183,11 @@ function AdminPage() {
       }
       setLoggedIn(true);
       setPassword("");
+      // Complete authentication before loading the dashboard data. The admin
+      // screen becomes usable immediately while orders load independently.
+      setSubmitting(false);
       try {
-        await loadOrders(data.session.access_token);
+        await loadOrders();
         toast.success("با موفقیت وارد پنل مدیریت شدید");
       } catch {
         toast.error("ورود موفق بود، اما دریافت سفارش‌ها ناموفق بود؛ از به‌روزرسانی استفاده کنید.");
@@ -235,7 +238,7 @@ function AdminPage() {
     try {
       const { data } = await withTimeout(supabase.auth.getSession(), 5000, "session_timeout");
       if (!data.session?.access_token) throw new Error("session_expired");
-      await loadOrders(data.session.access_token);
+      await loadOrders();
       toast.success("فهرست سفارش‌ها به‌روز شد");
     } catch {
       toast.error("دریافت سفارش‌ها انجام نشد؛ اتصال را بررسی و دوباره تلاش کنید.");
