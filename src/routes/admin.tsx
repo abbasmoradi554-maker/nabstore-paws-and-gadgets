@@ -158,10 +158,17 @@ function AdminPage() {
     setLoginError("");
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      // A stalled auth request must never leave the login form spinning forever.
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: email.trim(), password }),
+        12000,
+        "login_timeout",
+      );
       if (error || !data.session?.access_token) {
         setLoggedIn(false);
-        setLoginError("ایمیل یا رمز عبور اشتباه است. لطفاً اطلاعات ورود را بررسی کنید.");
+        setLoginError(error
+          ? "ورود رد شد؛ ایمیل یا رمز عبور را بررسی کنید."
+          : "ورود تأیید نشد؛ نشست معتبری از سرور دریافت نشد. دوباره تلاش کنید.");
         setPassword("");
         return;
       }
@@ -175,7 +182,11 @@ function AdminPage() {
       }
     } catch (error) {
       console.error("Admin login failed", error);
-      setLoginError("ورود انجام نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.");
+      const message = error instanceof Error ? error.message : "";
+      setLoginError(message === "login_timeout"
+        ? "پاسخی از سرور ورود دریافت نشد (بیش از ۱۲ ثانیه). اتصال یا درخواست احراز هویت را بررسی کنید و دوباره تلاش کنید."
+        : "ارتباط با سرویس ورود برقرار نشد. اینترنت یا مسدودشدن درخواست را بررسی کنید و دوباره تلاش کنید.");
+      setPassword("");
     } finally {
       setSubmitting(false);
       setLoading(false);
@@ -289,10 +300,11 @@ function AdminPage() {
             رمز عبور
             <input type="password" required autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 rounded-xl border bg-background px-4 outline-none focus:border-ring" />
           </label>
-          {loginError ? <p role="alert" aria-live="polite" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{loginError}</p> : null}
-          <Button type="submit" size="lg" disabled={submitting}>
+          {loginError ? <p role="alert" aria-live="assertive" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium leading-6 text-destructive">{loginError}</p> : null}
+          {submitting ? <p role="status" aria-live="polite" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> درخواست ورود ارسال شد؛ در حال دریافت پاسخ سرور…</p> : null}
+          <Button type="submit" size="lg" disabled={submitting || !email.trim() || !password}>
             {submitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            ورود به پنل
+            {submitting ? "در حال بررسی اطلاعات…" : "ورود به پنل"}
           </Button>
           <p className="text-xs leading-6 text-muted-foreground">دسترسی فقط برای ایمیل مدیر تعریف‌شده در تنظیمات امن سرور امکان‌پذیر است.</p>
         </form>
