@@ -551,13 +551,13 @@ function AdminPage() {
                   </div></td></tr> : null}
                 ))}
                 {ordersLoading && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground"><span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> در حال دریافت سفارش‌ها…</span></td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground"><span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> در حال دریافت سفارش‌ها…</span></td></tr>
                 )}
                 {!ordersLoading && ordersError && (
-                  <tr><td colSpan={7} className="px-4 py-12 text-center text-destructive">دریافت سفارش‌ها ناموفق بود. اتصال را بررسی و «به‌روزرسانی» را انتخاب کنید.</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-destructive">دریافت سفارش‌ها ناموفق بود. اتصال را بررسی و «به‌روزرسانی» را انتخاب کنید.</td></tr>
                 )}
                 {!ordersLoading && !ordersError && orders.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">هنوز سفارشی ثبت نشده است.</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">هنوز سفارشی ثبت نشده است.</td></tr>
                 )}
               </tbody>
             </table>
