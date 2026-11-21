@@ -14,6 +14,9 @@ const LazyAdminProductsPage = lazy(() =>
 
 
 export const Route = createFileRoute("/admin")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: search.tab === "products" ? "products" as const : "orders" as const,
+  }),
   head: () => ({
     meta: [
       { title: "مدیریت سفارش‌ها | ناب استور" },
@@ -66,6 +69,7 @@ function formatDate(value: string) {
 }
 
 function AdminPage() {
+  const { tab } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -76,7 +80,7 @@ function AdminPage() {
   const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "products">(tab);
 
   const loadOrders = async (accessToken: string) => {
     setOrdersLoading(true);
