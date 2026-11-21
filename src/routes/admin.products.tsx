@@ -42,6 +42,14 @@ const blank = (): Product => ({
 const inputClass = "h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 const areaClass = "w-full rounded-xl border border-input bg-background p-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  let timer: number | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => { timer = window.setTimeout(() => reject(new Error(message)), ms); }),
+  ]).finally(() => { if (timer !== undefined) window.clearTimeout(timer); });
+}
+
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return <label className="grid min-w-0 gap-1.5 text-sm font-medium"><span>{label}</span>{children}{hint ? <span className="text-xs font-normal text-muted-foreground">{hint}</span> : null}</label>;
 }
@@ -71,7 +79,14 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
   const load = async (_token?: string) => {
     setProductsLoading(true);
     try {
-      const { data, error } = await supabase.from("products").select("id, name, price, old_price, category, subcategory, short, description, specs, options, tags, added_order, images, active, updated_at").order("updated_at", { ascending: false }).limit(200);
+      const { data, error } = await withTimeout(
+        supabase.from("products")
+          .select("id, name, price, old_price, category, subcategory, short, description, specs, options, tags, added_order, images, active, updated_at")
+          .order("updated_at", { ascending: false })
+          .limit(200),
+        9000,
+        "products_timeout",
+      );
       if (error) throw error;
       setItems((data ?? []) as Product[]);
     } finally {
