@@ -16,7 +16,7 @@ function sanitizeCart(raw:unknown,products:ReturnType<typeof useCatalogProducts>
   out.push({key:cartKey(id,opts),id,qty:q,options:opts});
  }return out;
 }
-type CartValue={items:CartItem[];count:number;total:number;ready:boolean;add:(id:string,options:Record<string,string>,qty?:number)=>void;setQty:(key:string,qty:number)=>void;remove:(key:string)=>void;clear:()=>void};
+type CartValue={items:CartItem[];count:number;total:number;ready:boolean;catalogError:boolean;retryCatalog:()=>void;add:(id:string,options:Record<string,string>,qty?:number)=>void;setQty:(key:string,qty:number)=>void;remove:(key:string)=>void;clear:()=>void};
 const CartContext=createContext<CartValue|null>(null);
 export function CartProvider({children}:{children:ReactNode}){
  const catalog=useCatalogProducts();const products=catalog.data;
@@ -27,7 +27,7 @@ export function CartProvider({children}:{children:ReactNode}){
  const setQty=useCallback((key:string,qty:number)=>setItems(prev=>prev.map(i=>i.key===key?{...i,qty:Math.max(1,Math.min(MAX_QTY,qty))}:i)),[]);
  const remove=useCallback((key:string)=>setItems(prev=>prev.filter(i=>i.key!==key)),[]);
  const clear=useCallback(()=>setItems([]),[]);
- const value=useMemo<CartValue>(()=>{const count=items.reduce((s,i)=>s+i.qty,0);const total=items.reduce((s,i)=>s+(products?.find(p=>p.id===i.id)?.price??0)*i.qty,0);return{items,count,total,ready:ready&&catalog.isSuccess,add,setQty,remove,clear};},[items,products,ready,catalog.isSuccess,add,setQty,remove,clear]);
+ const value=useMemo<CartValue>(()=>{const count=items.reduce((s,i)=>s+i.qty,0);const total=items.reduce((s,i)=>s+(products?.find(p=>p.id===i.id)?.price??0)*i.qty,0);return{items,count,total,ready:ready&&catalog.isSuccess,catalogError:catalog.isError,retryCatalog:()=>{void catalog.refetch();},add,setQty,remove,clear};},[items,products,ready,catalog.isSuccess,catalog.isError,catalog.refetch,add,setQty,remove,clear]);
  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 export function useCart(){const ctx=useContext(CartContext);if(!ctx)throw new Error("useCart must be used inside CartProvider");return ctx;}
