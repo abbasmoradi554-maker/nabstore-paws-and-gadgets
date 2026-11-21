@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminOrders, updateAdminOrderStatus } from "@/lib/admin.functions";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -63,8 +63,13 @@ function AdminPage() {
   const loadOrders = async (accessToken: string) => {
     setOrdersLoading(true);
     try {
-      const result = await getAdminOrders({ data: { accessToken } });
-      setOrders(result.orders as Order[]);
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      setOrders((data ?? []) as Order[]);
       setLoggedIn(true);
     } finally {
       setOrdersLoading(false);
@@ -152,11 +157,15 @@ function AdminPage() {
     try {
       const { data } = await supabase.auth.getSession();
       if (!data.session?.access_token) throw new Error("session_expired");
-      const result = await updateAdminOrderStatus({
-        data: { accessToken: data.session.access_token, orderId, status: status as keyof typeof statusLabels & string },
-      });
+      const { data: updated, error } = await supabase
+        .from("orders")
+        .update({ status: status as keyof typeof statusLabels & string })
+        .eq("id", orderId)
+        .select("id, status")
+        .single();
+      if (error || !updated) throw error ?? new Error("order_update_failed");
       setOrders((current) => current.map((order) =>
-        order.id === orderId ? { ...order, status: result.order.status } : order
+        order.id === orderId ? { ...order, status: updated.status } : order
       ));
       toast.success("وضعیت سفارش تغییر کرد");
     } catch {
