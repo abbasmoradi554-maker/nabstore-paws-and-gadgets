@@ -5,7 +5,7 @@ import { categories, type Product, type CategorySlug, type ProductTag, type Opti
 type Row = {
   id:string; name:{fa:string;en:string}; price:number; old_price:number|null; category:string;
   subcategory:string|null; short:{fa:string;en:string}; description:{fa:string;en:string};
-  specs:Product["specs"]; options:Array<{type:string;values:Array<{fa:string;en:string}>>>;
+  specs: Product["specs"]; options: Array<{ type: string; values: Array<{ fa: string; en: string }> }>;
   images:string[]; tags:string[]; added_order:number;
 };
 
