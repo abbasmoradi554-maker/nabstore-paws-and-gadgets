@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
@@ -11,9 +11,7 @@ import { optimizedProductImage } from "@/lib/catalog";
 import { deleteAdminProduct, saveAdminProduct, uploadAdminProductImage } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
-  beforeLoad: () => {
-    throw redirect({ to: "/admin", search: { tab: "products" } });
-  },
+  component: LegacyProductsAdminRedirect,
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
   component: AdminProductsPage,
 });
@@ -58,6 +56,14 @@ function Field({ label, children, hint }: { label: string; children: ReactNode; 
 }
 function formatMoney(value: number) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
+}
+
+function LegacyProductsAdminRedirect() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    void navigate({ to: "/admin", search: { tab: "products" }, replace: true });
+  }, [navigate]);
+  return <main className="container-page flex min-h-40 items-center justify-center text-sm text-muted-foreground">در حال انتقال به داشبورد یکپارچه…</main>;
 }
 
 export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
