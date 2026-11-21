@@ -87,6 +87,9 @@ function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<"orders" | "products">(tab);
 
+  // Keep the visible tab synchronized with browser back/forward navigation.
+  useEffect(() => setActiveTab(tab), [tab]);
+
   const loadOrders = async (accessToken: string) => {
     setOrdersLoading(true);
     try {
@@ -157,7 +160,6 @@ function AdminPage() {
       if (error || !data.session?.access_token) throw new Error("login_failed");
       setLoggedIn(true);
       setPassword("");
-      setLoggedIn(true);
       await loadOrders(data.session.access_token);
       toast.success("با موفقیت وارد پنل مدیریت شدید");
     } catch (error) {
