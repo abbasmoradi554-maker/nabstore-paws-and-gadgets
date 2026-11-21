@@ -49,7 +49,7 @@ function formatMoney(value: number) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 }
 
-export function AdminProductsPage() {
+export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accessToken, setAccessToken] = useState("");
@@ -289,7 +289,7 @@ export function AdminProductsPage() {
           <div><h1 className="text-2xl font-extrabold sm:text-3xl">مدیریت محصولات</h1><p className="mt-1 text-sm text-muted-foreground">کاتالوگ، قیمت، تصاویر و مشخصات NABSTORE</p></div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline"><a href="/admin">مدیریت سفارش‌ها</a></Button>
+          {onBack ? <Button type="button" variant="outline" onClick={onBack}>بازگشت به سفارش‌ها</Button> : <Button asChild variant="outline"><a href="/admin">مدیریت سفارش‌ها</a></Button>}
           <Button type="button" variant="outline" onClick={() => void load(accessToken)} disabled={busy}><RefreshCw className="size-4" /> تازه‌سازی</Button>
           <Button type="button" variant="ghost" onClick={() => void logout()}><LogOut className="size-4" /> خروج</Button>
         </div>
