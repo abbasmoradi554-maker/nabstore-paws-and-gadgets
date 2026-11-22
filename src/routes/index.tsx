@@ -43,6 +43,17 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+function useHomeText() {
+  const { l } = useI18n();
+  const content = useStoreContent();
+  return (key: string, fallback: string) => {
+    const value = content.data?.home?.[key];
+    return value && typeof value === "object" && "fa" in value && "en" in value
+      ? l(value as { fa: string; en: string })
+      : fallback;
+  };
+}
+
 function Index() {
   return (
     <>
@@ -151,11 +162,12 @@ function Hero() {
 
 function ValueStrip() {
   const { t } = useI18n();
+  const h = useHomeText();
   const items = [
-    { Icon: Truck, title: t("valueShipping"), text: t("valueShippingText") },
-    { Icon: Package, title: t("valuePackaging"), text: t("valuePackagingText") },
-    { Icon: Headset, title: t("valueSupport"), text: t("valueSupportText") },
-    { Icon: RotateCcw, title: t("valueReturns"), text: t("valueReturnsText") },
+    { Icon: Truck, title: h("valueShipping", t("valueShipping")), text: h("valueShippingText", t("valueShippingText")) },
+    { Icon: Package, title: h("valuePackaging", t("valuePackaging")), text: h("valuePackagingText", t("valuePackagingText")) },
+    { Icon: Headset, title: h("valueSupport", t("valueSupport")), text: h("valueSupportText", t("valueSupportText")) },
+    { Icon: RotateCcw, title: h("valueReturns", t("valueReturns")), text: h("valueReturnsText", t("valueReturnsText")) },
   ];
   return (
     <section className="container-page mt-6">
@@ -178,11 +190,12 @@ function ValueStrip() {
 
 function CategoriesSection() {
   const { t } = useI18n();
+  const h = useHomeText();
   const content = useStoreContent();
   const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
   return (
     <section className="container-page mt-16 sm:mt-20">
-      <SectionHeader title={t("catTitle")} subtitle={t("catSubtitle")} link={{ to: "/shop" }} />
+      <SectionHeader title={h("catTitle", t("catTitle"))} subtitle={h("catSubtitle", t("catSubtitle"))} link={{ to: "/shop" }} />
       <div className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-4 sm:gap-x-4 lg:grid-cols-7">
         {visibleCategories.map((c: (typeof categories)[number]) => (
           <CategoryCard key={c.slug} category={c} />
@@ -209,6 +222,7 @@ function PhoneSection() {
 
 function TrendingSection() {
   const { t } = useI18n();
+  const h = useHomeText();
   const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
@@ -217,7 +231,7 @@ function TrendingSection() {
           <Flame className="size-3.5" />
           {t("badgeTrending")}
         </div>
-        <SectionHeader inverted title={t("trendingNow")} subtitle={t("trendingSubtitle")} link={{ to: "/trending" }} />
+        <SectionHeader inverted title={h("trendingTitle", t("trendingNow"))} subtitle={h("trendingSubtitle", t("trendingSubtitle"))} link={{ to: "/trending" }} />
         <ProductRail products={(catalog.data ?? []).filter((p) => p.tags.includes("trending")).slice(0, 4)} />
       </div>
     </section>
@@ -226,13 +240,14 @@ function TrendingSection() {
 
 function NewArrivals() {
   const { t } = useI18n();
+  const h = useHomeText();
   const catalog = useCatalogProducts();
   const list = [...(catalog.data ?? [])].sort((a, b) => b.addedOrder - a.addedOrder).slice(0, 4);
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader
-        title={t("newArrivals")}
-        subtitle={t("newArrivalsSubtitle")}
+        title={h("newArrivals", t("newArrivals"))}
+        subtitle={h("newArrivalsSubtitle", t("newArrivalsSubtitle"))}
         link={{ to: "/shop", search: { sort: "newest" } }}
       />
       <ProductRail products={list} />
@@ -242,6 +257,7 @@ function NewArrivals() {
 
 function OffersSection() {
   const { t } = useI18n();
+  const h = useHomeText();
   const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
@@ -260,11 +276,11 @@ function OffersSection() {
             <BadgePercent className="size-3.5" />
             {t("offers")}
           </span>
-          <h2 className="mt-4 text-2xl font-extrabold text-ink-foreground sm:text-3xl">{t("offersTitle")}</h2>
-          <p className="mt-2 max-w-sm text-sm leading-7 text-ink-foreground/75">{t("offersText")}</p>
+          <h2 className="mt-4 text-2xl font-extrabold text-ink-foreground sm:text-3xl">{h("offersTitle", t("offersTitle"))}</h2>
+          <p className="mt-2 max-w-sm text-sm leading-7 text-ink-foreground/75">{h("offersText", t("offersText"))}</p>
           <Button asChild variant="highlight" size="lg" className="mt-5 w-fit rounded-xl">
             <Link to="/shop" search={{ sale: true }}>
-              {t("offersCta")}
+              {h("offersCta", t("offersCta"))}
               <ArrowLeft className="ltr:rotate-180" />
             </Link>
           </Button>
@@ -279,10 +295,11 @@ function OffersSection() {
 
 function BestSellers() {
   const { t } = useI18n();
+  const h = useHomeText();
   const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
-      <SectionHeader title={t("bestSellers")} subtitle={t("bestSellersSubtitle")} link={{ to: "/shop" }} />
+      <SectionHeader title={h("bestSellers", t("bestSellers"))} subtitle={h("bestSellersSubtitle", t("bestSellersSubtitle"))} link={{ to: "/shop" }} />
       <ProductRail products={(catalog.data ?? []).filter((p) => p.tags.includes("pick")).slice(0, 4)} />
     </section>
   );
@@ -290,10 +307,11 @@ function BestSellers() {
 
 function Recommended() {
   const { t } = useI18n();
+  const h = useHomeText();
   const catalog = useCatalogProducts();
   return (
     <section className="container-page mt-16 sm:mt-20">
-      <SectionHeader title={t("recommended")} subtitle={t("recommendedSubtitle")} link={{ to: "/shop" }} />
+      <SectionHeader title={h("recommended", t("recommended"))} subtitle={h("recommendedSubtitle", t("recommendedSubtitle"))} link={{ to: "/shop" }} />
       <ProductGrid products={(catalog.data ?? []).filter((p) => p.tags.includes("recommended")).slice(0, 4)} />
     </section>
   );
@@ -301,20 +319,21 @@ function Recommended() {
 
 function Reviews() {
   const { t } = useI18n();
+  const h = useHomeText();
   const points = [
-    { Icon: UserCheck, label: t("reviewsPoint1") },
-    { Icon: BadgeCheck, label: t("reviewsPoint2") },
-    { Icon: ShieldCheck, label: t("reviewsPoint3") },
+    { Icon: UserCheck, label: h("reviewsPoint1", t("reviewsPoint1")) },
+    { Icon: BadgeCheck, label: h("reviewsPoint2", t("reviewsPoint2")) },
+    { Icon: ShieldCheck, label: h("reviewsPoint3", t("reviewsPoint3")) },
   ];
   return (
     <section className="container-page mt-16 sm:mt-20">
-      <SectionHeader title={t("reviewsTitle")} subtitle={t("reviewsSubtitle")} />
+      <SectionHeader title={h("reviewsTitle", t("reviewsTitle"))} subtitle={h("reviewsSubtitle", t("reviewsSubtitle"))} />
       <div className="grid items-center gap-8 rounded-3xl border bg-card p-6 sm:p-10 lg:grid-cols-5">
         <div className="flex items-start gap-4 lg:col-span-3">
           <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-accent text-accent-foreground">
             <MessageSquareQuote className="size-6" />
           </span>
-          <p className="text-sm leading-8 text-foreground/80 sm:text-base sm:leading-8">{t("reviewsEmpty")}</p>
+          <p className="text-sm leading-8 text-foreground/80 sm:text-base sm:leading-8">{h("reviewsEmpty", t("reviewsEmpty"))}</p>
         </div>
         <ul className="grid gap-3 sm:grid-cols-3 lg:col-span-2 lg:grid-cols-1">
           {points.map(({ Icon, label }) => (
@@ -331,6 +350,7 @@ function Reviews() {
 
 function SupportCta() {
   const { t } = useI18n();
+  const h = useHomeText();
   return (
     <section className="container-page mt-16 sm:mt-20">
       <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-primary-soft p-6 sm:flex-row sm:items-center sm:p-10">
@@ -339,12 +359,12 @@ function SupportCta() {
             <Headset className="size-6" />
           </span>
           <div>
-            <h2 className="text-xl font-bold text-primary-deep sm:text-2xl">{t("supportTitle")}</h2>
-            <p className="mt-2 max-w-xl text-sm leading-7 text-primary-deep/75">{t("supportText")}</p>
+            <h2 className="text-xl font-bold text-primary-deep sm:text-2xl">{h("supportTitle", t("supportTitle"))}</h2>
+            <p className="mt-2 max-w-xl text-sm leading-7 text-primary-deep/75">{h("supportText", t("supportText"))}</p>
           </div>
         </div>
         <Button asChild size="xl">
-          <Link to="/contact">{t("supportCta")}</Link>
+          <Link to="/contact">{h("supportCta", t("supportCta"))}</Link>
         </Button>
       </div>
     </section>
