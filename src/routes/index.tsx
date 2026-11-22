@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { categories } from "@/data/products";
 import { useCatalogProducts } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
+import { useStoreContent } from "@/lib/store-content";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,7 +62,10 @@ function Index() {
 }
 
 function Hero() {
-  const { t } = useI18n();
+  const { t, l } = useI18n();
+  const content = useStoreContent();
+  const home = content.data?.home ?? {};
+  const localized = (value: unknown, fallback: string) => value && typeof value === "object" && "fa" in value && "en" in value ? l(value as { fa: string; en: string }) : fallback;
   return (
     <section className="container-page pt-4 sm:pt-6">
       <div className="grid gap-4 lg:grid-cols-3">
@@ -78,21 +82,21 @@ function Hero() {
           <div className="flex h-full max-w-lg animate-fade-up flex-col justify-center gap-5 p-6 sm:p-10 lg:p-14">
             <span className="inline-flex w-fit items-center gap-2 rounded-full bg-card/80 px-3 py-1.5 text-xs font-semibold text-primary backdrop-blur">
               <span className="size-1.5 rounded-full bg-highlight" />
-              {t("heroEyebrow")}
+              {localized(home.heroEyebrow, t("heroEyebrow"))}
             </span>
             <h1 className="text-3xl font-extrabold leading-[1.25] text-foreground sm:text-4xl lg:text-5xl lg:leading-[1.2]">
-              {t("heroTitle")}
+              {localized(home.heroTitle, t("heroTitle"))}
             </h1>
-            <p className="max-w-md text-sm leading-7 text-foreground/75 sm:text-base sm:leading-8">{t("heroText")}</p>
+            <p className="max-w-md text-sm leading-7 text-foreground/75 sm:text-base sm:leading-8">{localized(home.heroText, t("heroText"))}</p>
             <div className="flex flex-wrap gap-3 pt-1">
               <Button asChild size="xl">
                 <Link to="/shop">
-                  {t("heroCta")}
+                  {localized(home.heroCta, t("heroCta"))}
                   <ArrowLeft className="ltr:rotate-180" />
                 </Link>
               </Button>
               <Button asChild size="xl" variant="outline" className="bg-card/70 backdrop-blur">
-                <Link to="/trending">{t("heroCta2")}</Link>
+                <Link to="/trending">{localized(home.heroCta2, t("heroCta2"))}</Link>
               </Button>
             </div>
           </div>
@@ -114,8 +118,8 @@ function Hero() {
             />
             <div className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent" />
             <span className="text-xs font-semibold text-highlight">NEW</span>
-            <h2 className="mt-1 text-xl font-bold text-ink-foreground">{t("promoTechTitle")}</h2>
-            <p className="mt-1 text-sm text-ink-foreground/75">{t("promoTechText")}</p>
+            <h2 className="mt-1 text-xl font-bold text-ink-foreground">{localized(home.promoTechTitle, t("promoTechTitle"))}</h2>
+            <p className="mt-1 text-sm text-ink-foreground/75">{localized(home.promoTechText, t("promoTechText"))}</p>
           </Link>
           <Link
             to="/category/$slug"
@@ -123,8 +127,8 @@ function Hero() {
             className="group relative isolate flex min-h-52 items-center gap-4 overflow-hidden rounded-3xl bg-primary-soft p-6"
           >
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-primary-deep">{t("promoPhoneTitle")}</h2>
-              <p className="mt-1 text-sm text-primary-deep/70">{t("promoPhoneText")}</p>
+              <h2 className="text-xl font-bold text-primary-deep">{localized(home.promoPhoneTitle, t("promoPhoneTitle"))}</h2>
+              <p className="mt-1 text-sm text-primary-deep/70">{localized(home.promoPhoneText, t("promoPhoneText"))}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
                 {t("viewAll")}
                 <ArrowLeft className="size-4 ltr:rotate-180" />
