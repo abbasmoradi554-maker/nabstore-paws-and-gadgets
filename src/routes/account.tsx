@@ -97,11 +97,11 @@ function CustomerAccount() {
     setBusy(true);
     try {
       const normalizedMobile = mobile.replace(/[۰-۹]/g, d => String(d.charCodeAt(0)-0x06f0)).replace(/[٠-٩]/g, d => String(d.charCodeAt(0)-0x0660)).replace(/[\s-]/g, "");
-      const { data, error } = await supabase.rpc("claim_order_for_customer", {
-        p_order_code: orderCode.trim().toUpperCase(), p_mobile: normalizedMobile,
+      const { data, error } = await supabase.functions.invoke("claim-order", {
+        body: { orderCode: orderCode.trim().toUpperCase(), mobile: normalizedMobile },
       });
       if (error) throw error;
-      if (!data) throw new Error("order_not_found");
+      if (!data?.claimed) throw new Error("order_not_found");
       await loadOrders();
       setOrderCode(""); setMobile(""); setShowClaim(false);
       toast.success("سفارش قبلی به حساب شما اضافه شد.");
