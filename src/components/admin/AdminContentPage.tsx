@@ -64,6 +64,14 @@ const defaults: Record<SectionKey, unknown> = {
 };
 const helpText = "ساختار را به صورت JSON نگه دارید. متن‌های فارسی و انگلیسی هر دو قابل ویرایش‌اند. پیش از ذخیره، ساختار JSON بررسی می‌شود.";
 
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  let timer: number | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => { timer = window.setTimeout(() => reject(new Error(message)), ms); }),
+  ]).finally(() => { if (timer !== undefined) window.clearTimeout(timer); });
+}
+
 export function AdminContentPage({ onBack }: { onBack?: () => void }) {
   const [section, setSection] = useState<SectionKey>("store");
   const [values, setValues] = useState<Record<SectionKey, unknown>>(defaults);
@@ -75,7 +83,9 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
   const load = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("store_content").select("key,value");
+      const request = supabase.from("store_content").select("key,value")
+        .abortSignal(AbortSignal.timeout(8000));
+      const { data, error } = await withTimeout(request, 9000, "cms_content_timeout");
       if (error) throw error;
       const next = { ...defaults } as Record<SectionKey, unknown>;
       for (const row of data ?? []) {
