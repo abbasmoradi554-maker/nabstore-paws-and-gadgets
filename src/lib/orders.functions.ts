@@ -19,9 +19,9 @@ export const placeOrder = createServerFn({ method: "POST" })
       headers: {
         apikey: publishableKey,
         "Content-Type": "application/json",
-        ...(data.accessToken ? { Authorization: `Bearer ${data.accessToken}` } : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(orderData),
     });
 
     const result = await response.json().catch(() => null) as
