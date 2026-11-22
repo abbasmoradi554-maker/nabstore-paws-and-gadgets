@@ -32,7 +32,7 @@ const defaults: Record<SectionKey, unknown> = {
 const helpText = "ساختار را به صورت JSON نگه دارید. متن‌های فارسی و انگلیسی هر دو قابل ویرایش‌اند. پیش از ذخیره، ساختار JSON بررسی می‌شود.";
 
 export function AdminContentPage({ onBack }: { onBack?: () => void }) {
-  const { lang } = useI18n();
+  useI18n();
   const [section, setSection] = useState<SectionKey>("store");
   const [values, setValues] = useState<Record<SectionKey, unknown>>(defaults);
   const [draft, setDraft] = useState("");
@@ -47,7 +47,7 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
       if (error) throw error;
       const next = { ...defaults } as Record<SectionKey, unknown>;
       for (const row of data ?? []) {
-        if (row.key in next) next[row.key as SectionKey] = row.value ?? defaults[row.key as SectionKey];
+        if (row.key in next) {\n          if (row.key === "pages" && (!row.value || Object.keys(row.value).length === 0)) continue;\n          next[row.key as SectionKey] = row.value ?? defaults[row.key as SectionKey];\n        }
       }
       setValues(next);
       setHasSaved(Object.fromEntries((data ?? []).map((row) => [row.key, true])));
