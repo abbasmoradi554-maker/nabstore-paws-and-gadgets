@@ -20,6 +20,7 @@ Status: **Plan only — no Production changes have been executed**
 1. **Orders**
    - Add nullable `user_id uuid` referencing `auth.users(id)` with `ON DELETE SET NULL`.
    - Add `shipping_toman bigint` without changing historical order totals. For existing rows, backfill `0` (the legacy Production checkout did not store a separate shipping amount). Set the column default to `0` for legacy callers and make it NOT NULL.
+   - Add an authenticated SELECT policy for order owners (`auth.uid() = user_id`) while retaining the existing admin SELECT/UPDATE policies. No anonymous order SELECT/INSERT/UPDATE/DELETE policy is to be added.
    - Do not update, delete, or rewrite any existing order row other than populating the new `shipping_toman=0` column.
 
 2. **Products**
@@ -37,7 +38,7 @@ Status: **Plan only — no Production changes have been executed**
    - Create public bucket `product-images`.
    - Allow only `image/jpeg`, `image/png`, `image/webp`, and `image/avif`.
    - Set the upload size limit to 8 MiB to match the current admin upload validation.
-   - Add an authenticated INSERT policy restricted to the configured admin email and bucket ID. Public object reads are expected because the bucket is public. Do not grant anonymous uploads, updates, or deletes.
+   - A Production `storage.objects` admin-only INSERT policy for `product-images` already exists; preserve it and verify it becomes effective after bucket creation. Public object reads are expected because the bucket is public. Do not grant anonymous uploads, updates, or deletes.
 
 ## RPC and Edge Function compatibility
 
