@@ -95,7 +95,7 @@ function Checkout() {
       window.scrollTo({ top: 0 });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : t("orderFailed"));
+      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : message.includes("insufficient_stock") ? "موجودی این محصول کافی نیست؛ سبد خرید را به‌روزرسانی کنید." : t("orderFailed"));
     } finally {
       setPending(false);
     }
