@@ -11,11 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 const LazyAdminProductsPage = lazy(() =>
   import("./admin.products").then((module) => ({ default: module.AdminProductsPage })),
 );
+const LazyAdminContentPage = lazy(() =>
+  import("./admin.content").then((module) => ({ default: module.AdminContentPage })),
+);
 
 
 export const Route = createFileRoute("/admin")({
   validateSearch: (search: Record<string, unknown>) => ({
-    tab: search.tab === "products" ? "products" as const : "orders" as const,
+    tab: search.tab === "products" ? "products" as const : search.tab === "content" ? "content" as const : "orders" as const,
     recovery: search.recovery === "1",
   }),
   head: () => ({
@@ -77,7 +80,7 @@ function formatDate(value: string) {
 function AdminPage() {
   const { tab, recovery: recoverySearch } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
-  const selectTab = (next: "orders" | "products") => {
+  const selectTab = (next: "orders" | "products" | "content") => {
     setActiveTab(next);
     void navigate({ search: (current) => ({ ...current, tab: next }), replace: true });
   };
@@ -407,9 +410,14 @@ function AdminPage() {
         <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border bg-card p-2">
           <Button type="button" variant={activeTab === "orders" ? "default" : "ghost"} onClick={() => selectTab("orders")}>مدیریت سفارش‌ها</Button>
           <Button type="button" variant={activeTab === "products" ? "default" : "ghost"} onClick={() => selectTab("products")}>مدیریت محصولات</Button>
+          <Button type="button" variant={activeTab === "content" ? "default" : "ghost"} onClick={() => selectTab("content")}>مدیریت محتوای سایت</Button>
         </div>
       ) : null}
-      {activeTab === "products" && loggedIn ? (
+      {activeTab === "content" && loggedIn ? (
+        <Suspense fallback={<div className="flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin" /> در حال باز کردن مدیریت محتوا…</div>}>
+          <LazyAdminContentPage onBack={() => selectTab("orders")} />
+        </Suspense>
+      ) : activeTab === "products" && loggedIn ? (
         <Suspense fallback={<div className="flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-5 animate-spin" /> در حال باز کردن مدیریت محصولات…</div>}>
           <LazyAdminProductsPage onBack={() => selectTab("orders")} />
         </Suspense>
