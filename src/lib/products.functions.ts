@@ -26,7 +26,7 @@ export const listActiveProducts = createServerFn({ method: "GET" }).handler(asyn
 
   const { data, error } = await supabase
     .from("products")
-    .select("id,name,price,old_price,category,subcategory,short,description,specs,options,images,tags,added_order,updated_at")
+    .select("id,name,price,old_price,stock_quantity,category,subcategory,short,description,specs,options,images,tags,added_order,updated_at")
     .eq("active", true)
     .order("added_order", { ascending: false })
     .order("updated_at", { ascending: false });
