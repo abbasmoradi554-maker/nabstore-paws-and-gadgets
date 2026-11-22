@@ -12,6 +12,7 @@ export function InfoPage({ page }: { page: InfoPageData }) {
   const shipping = content.data?.shipping;
   const shippingFee = Number.isSafeInteger(Number(shipping?.flatFeeToman)) ? Math.max(0, Number(shipping.flatFeeToman)) : 59000;
   const freeAbove = Number.isSafeInteger(Number(shipping?.freeAboveToman)) ? Math.max(0, Number(shipping.freeAboveToman)) : 2000000;
+  const intro = pageKey === "shipping" ? { fa: "ارسال عادی ۵۹ هزار تومان است و برای سفارش‌های ۲ میلیون تومان و بیشتر رایگان خواهد بود. هزینه نهایی پیش از ثبت سفارش نمایش داده می‌شود.", en: "Standard shipping is 59,000 Toman and free for orders of 2,000,000 Toman or more. The final cost is shown before placing the order." } : pageData.intro;
   const sections = pageKey === "shipping"
     ? [
         { title: { fa: "هزینه ارسال", en: "Shipping fee" }, body: { fa: shipping?.enabled === false ? "هزینه ارسال در حال حاضر غیرفعال است." : `هزینه ارسال ثابت ${new Intl.NumberFormat("fa-IR").format(shippingFee)} تومان است. برای خریدهای ${new Intl.NumberFormat("fa-IR").format(freeAbove)} تومان و بیشتر، ارسال رایگان خواهد بود.`, en: shipping?.enabled === false ? "Shipping fees are currently disabled." : `Standard shipping is ${shippingFee.toLocaleString("en-US")} Toman. Shipping is free on orders of ${freeAbove.toLocaleString("en-US")} Toman or more.` } },
@@ -22,7 +23,7 @@ export function InfoPage({ page }: { page: InfoPageData }) {
   return (
     <section className="container-page max-w-3xl pt-10">
       <h1 className="text-3xl font-bold">{l(pageData.title)}</h1>
-      <p className="mt-4 leading-8 text-foreground/80">{l(pageData.intro)}</p>
+      <p className="mt-4 leading-8 text-foreground/80">{l(intro)}</p>
       <div className="mt-8 grid gap-4">
         {sections.map((s: InfoPageData["sections"][number]) => (
           <div key={s.title.en} className="rounded-2xl border bg-card p-5 sm:p-6">
