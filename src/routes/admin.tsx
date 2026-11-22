@@ -85,17 +85,15 @@ function AdminPage() {
     setActiveTab(next);
     void navigate({ search: (current) => ({ ...current, tab: next }), replace: true });
   };
-  const [email, setEmail] = useState(() => {
-    try { return localStorage.getItem("nabstore-admin-username") ?? ""; } catch { return ""; }
-  });
-  const [rememberUsername, setRememberUsername] = useState(() => {
-    try { return localStorage.getItem("nabstore-admin-remember-username") === "true"; } catch { return false; }
-  });
+  // Read browser storage after hydration to keep the server and first client
+  // render identical.
+  const [email, setEmail] = useState("");
+  const [rememberUsername, setRememberUsername] = useState(false);
   const [password, setPassword] = useState("");
   const [forgotPassword, setForgotPassword] = useState(false);
   const [sendingRecovery, setSendingRecovery] = useState(false);
   const [recoverySent, setRecoverySent] = useState(false);
-  const [recoveryMode, setRecoveryMode] = useState(() => recoverySearch || new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery");
+  const [recoveryMode, setRecoveryMode] = useState(recoverySearch);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [updatingPassword, setUpdatingPassword] = useState(false);
@@ -113,6 +111,20 @@ function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<"orders" | "products" | "content">(tab);
+
+  // Restore remembered login details and password-recovery state only after
+  // hydration; never read window/localStorage during the server render.
+  useEffect(() => {
+    try {
+      const remembered = localStorage.getItem("nabstore-admin-remember-username") === "true";
+      setRememberUsername(remembered);
+      setEmail(remembered ? localStorage.getItem("nabstore-admin-username") ?? "" : "");
+    } catch {
+      // Browser storage may be disabled.
+    }
+    const hashRecovery = new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
+    setRecoveryMode(recoverySearch || hashRecovery);
+  }, [recoverySearch]);
 
   // Keep the visible tab synchronized with browser back/forward navigation.
   useEffect(() => setActiveTab(tab), [tab]);
