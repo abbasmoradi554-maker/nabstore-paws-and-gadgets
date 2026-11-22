@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { siteUrl } from "@/lib/site-config";
 import { Instagram, Mail, MapPin, Phone, Send } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
@@ -13,10 +14,10 @@ export const Route = createFileRoute("/contact")({
       { property: "og:title", content: "تماس با ناب استور" },
       { property: "og:description", content: "با پشتیبانی ناب استور در ارتباط باشید." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://nabstore-paws-and-gadgets.lovable.app/contact" },
+      { property: "og:url", content: `${siteUrl}/contact` },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://nabstore-paws-and-gadgets.lovable.app/contact" }],
+    links: [{ rel: "canonical", href: `${siteUrl}/contact` }],
   }),
   component: Contact,
 });
