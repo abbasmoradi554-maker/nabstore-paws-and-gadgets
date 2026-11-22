@@ -11,6 +11,7 @@ import { formatNumber, useI18n, type DictKey } from "@/lib/i18n";
 import { customerSchema, provinces, type CustomerInput } from "@/lib/order-schema";
 import type { PricedLine } from "@/lib/order-pricing";
 import { placeOrder } from "@/lib/orders.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/lib/site-config";
 import { useStoreContent } from "@/lib/store-content";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/checkout")({
 });
 
 type Field = keyof CustomerInput;
-type Placed = { code: string; lines: PricedLine[]; total: number; customer: CustomerInput };
+type Placed = { code: string; lines: PricedLine[]; subtotal: number; shippingToman: number; total: number; customer: CustomerInput };
 
 const empty: CustomerInput = { name: "", mobile: "", province: "" as CustomerInput["province"], city: "", address: "", postalCode: "", notes: "" };
 
@@ -45,7 +46,9 @@ function buildSummary(o: Placed) {
     `سفارش ${siteConfig.nameFa}`,
     `شماره سفارش: ${o.code}`,
     ...lines,
-    `جمع کل: ${p(o.total)}`,
+    `جمع کالاها: ${p(o.subtotal)}`,
+    `هزینه ارسال: ${o.shippingToman === 0 ? "رایگان" : p(o.shippingToman)}`,
+    `مبلغ نهایی: ${p(o.total)}`,
     `نام: ${o.customer.name}`,
     `موبایل: ${o.customer.mobile}`,
     `نشانی: ${o.customer.province}، ${o.customer.city}، ${o.customer.address}`,
@@ -60,6 +63,11 @@ function Checkout() {
   const { t, l, price, num } = useI18n();
   const cart = useCart();
   const catalog = useCatalogProducts();
+  const storeContent = useStoreContent();
+  const shippingConfig = storeContent.data?.shipping ?? { flatFeeToman: 59000, freeAboveToman: 2000000, enabled: true };
+  const flatShipping = Number.isSafeInteger(Number(shippingConfig.flatFeeToman)) ? Math.max(0, Number(shippingConfig.flatFeeToman)) : 59000;
+  const freeAbove = Number.isSafeInteger(Number(shippingConfig.freeAboveToman)) ? Math.max(0, Number(shippingConfig.freeAboveToman)) : 2000000;
+  const shippingToman = shippingConfig.enabled === false || (freeAbove > 0 && cart.total >= freeAbove) ? 0 : flatShipping;
   const submit = useServerFn(placeOrder);
   const [form, setForm] = useState<CustomerInput>(empty);
   const [errors, setErrors] = useState<Partial<Record<Field, DictKey>>>({});
@@ -87,8 +95,14 @@ function Checkout() {
     try {
       const formElement = e.currentTarget;
       const honeypot = String(new FormData(formElement).get("website") ?? "");
+      const { data: sessionData } = await supabase.auth.getSession();
       const res = await submit({
-        data: { customer: parsed.data, items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })), honeypot },
+        data: {
+          customer: parsed.data,
+          items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })),
+          honeypot,
+          ...(sessionData.session?.access_token ? { accessToken: sessionData.session.access_token } : {}),
+        },
       });
       setPlaced({ ...res, customer: parsed.data });
       cart.clear();
@@ -200,11 +214,16 @@ function Checkout() {
               );
             })}
           </ul>
-          <div className="mt-4 flex justify-between border-t pt-4 font-bold">
-            <span>{t("total")}</span>
-            <span>{price(cart.total)}</span>
+          <div className="mt-4 grid gap-2 border-t pt-4 text-sm">
+            <div className="flex justify-between"><span>جمع کالاها</span><span>{price(cart.total)}</span></div>
+            <div className="flex justify-between"><span>هزینه ارسال</span><span>{shippingToman === 0 ? "رایگان" : price(shippingToman)}</span></div>
+            <p className="text-xs leading-6 text-muted-foreground">
+              {freeAbove > 0 ? `ارسال برای خریدهای ${num(freeAbove)} تومان و بیشتر رایگان است.` : "هزینه ارسال ثابت است."}
+            </p>
+            <div className="flex justify-between border-t pt-3 font-bold">
+              <span>{t("total")}</span><span>{price(cart.total + shippingToman)}</span>
+            </div>
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">{t("shippingLater")}</p>
         </aside>
       </div>
     </section>
