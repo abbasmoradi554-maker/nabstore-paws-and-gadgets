@@ -230,9 +230,9 @@ function OrderPlaced({ order }: { order: Placed }) {
   const store = content.data?.store ?? siteConfig;
   const summary = buildSummary(order);
   const telegram = typeof store.telegram === "string" ? store.telegram.replace(/^@/, "") : "";
-  const whatsapp = typeof store.whatsapp === "string" ? store.whatsapp.replace(/\\D/g, "") : "";
-  const tg = telegram && !/^\\[.*\\]$/.test(telegram) ? `https://t.me/${telegram}` : "";
-  const wa = whatsapp && !/^\\[.*\\]$/.test(whatsapp) ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(summary)}` : "";
+  const whatsapp = typeof store.whatsapp === "string" ? store.whatsapp.replace(/\D/g, "") : "";
+  const tg = telegram && !/^[\[][^\]]*[\]]$/.test(telegram) ? `https://t.me/${telegram}` : "";
+  const wa = whatsapp && !/^[\[][^\]]*[\]]$/.test(whatsapp) ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(summary)}` : "";
 
   const copy = async () => {
     try {
