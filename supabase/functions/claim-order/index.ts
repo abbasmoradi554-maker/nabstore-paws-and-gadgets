@@ -77,6 +77,7 @@ Deno.serve(async (request:Request) => {
     const authClient = createClient(Deno.env.get("SUPABASE_URL")!,apiKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
     const {data:authData,error:authError}=await authClient.auth.getUser(token);
     if (authError || !authData.user) return json(request,{error:"unauthorized"},401);
+    if (!authData.user.email_confirmed_at) return json(request,{error:"email_verification_required"},403);
 
     const body = await request.json().catch(()=>null) as Record<string,unknown>|null;
     const orderCode = typeof body?.orderCode==="string" ? body.orderCode.trim().toUpperCase() : "";
