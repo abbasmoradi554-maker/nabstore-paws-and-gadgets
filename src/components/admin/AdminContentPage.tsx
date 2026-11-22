@@ -29,7 +29,7 @@ const defaults: Record<SectionKey, unknown> = {
     promoPhoneTitle: { fa: "قاب گوشی و لوازم جانبی", en: "Phone cases & accessories" }, promoPhoneText: { fa: "قاب، گلس، محافظ لنز و هولدر", en: "Cases, screen guards, lens protectors and holders" },
     announcement: { fa: "محصولات نمونه‌اند — قیمت و موجودی نهایی پس از ثبت سفارش توسط پشتیبانی با شما هماهنگ می‌شود.", en: "Sample products — support confirms final price and availability after ordering." },
     valueShipping: { fa: "ارسال به سراسر کشور", en: "Nationwide shipping" },
-    valueShippingText: { fa: "هزینه ارسال هنگام تأیید سفارش اعلام می‌شود", en: "Shipping cost is confirmed with your order" },
+    valueShippingText: { fa: "ارسال عادی ۵۹ هزار تومان؛ خرید بالای ۲ میلیون تومان رایگان", en: "Standard shipping 59,000 Toman; free over 2,000,000 Toman" },
     valuePackaging: { fa: "بسته‌بندی ایمن", en: "Safe packaging" },
     valuePackagingText: { fa: "بسته‌بندی مناسب برای حمل", en: "Packed carefully for transit" },
     valueSupport: { fa: "پشتیبانی پیش و پس از فروش", en: "Pre- and post-sale support" },
