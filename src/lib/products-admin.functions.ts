@@ -13,6 +13,7 @@ const productInput = z.object({
   id: z.string().regex(/^[a-z0-9-]{2,60}$/),
   name: localized,
   price: z.number().int().min(1).max(1_000_000_000),
+  stock_quantity: z.number().int().min(0).max(1_000_000).nullable().default(null),
   oldPrice: z.number().int().min(0).max(1_000_000_000).nullable(),
   category: z.enum(["phone-cases","food-water","toys","collars","hygiene","beds-carriers","gadgets"]),
   subcategory: z.string().max(80).nullable().optional(),
