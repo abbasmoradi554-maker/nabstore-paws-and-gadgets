@@ -157,7 +157,58 @@ async function createOrder(body: Record<string, unknown>, userId: string | null)
     return { id: item.id, qty: Number(item.qty), options: options as Record<string, string> };
   });
 
+  const idempotencyKey = typeof body.idempotencyKey === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.idempotencyKey)
+    ? body.idempotencyKey.toLowerCase()
+    : null;
+  if (body.idempotencyKey !== undefined && !idempotencyKey) throw new Error("invalid_items");
+  const stableOrderCode = idempotencyKey
+    ? `NB-${idempotencyKey.replace(/-/g, "").slice(0, 16).toUpperCase()}`
+    : null;
+
   const db = serviceClient();
+  const findExistingOrder = async () => {
+    if (!stableOrderCode) return null;
+    const { data: existing, error } = await db
+      .from("orders")
+      .select("order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman")
+      .eq("order_code", stableOrderCode)
+      .maybeSingle();
+    if (error) throw new Error("save_failed");
+    if (!existing) return null;
+
+    const existingLines = Array.isArray(existing.items) ? existing.items as Array<Record<string, unknown>> : [];
+    const sameItems = existingLines.length === items.length && items.every((item, index) => {
+      const line = existingLines[index];
+      if (!line || line.id !== item.id || Number(line.qty) !== item.qty) return false;
+      const storedOptions = line.options && typeof line.options === "object" ? line.options as Record<string, unknown> : {};
+      return Object.entries(item.options).every(([key, value]) => storedOptions[key] === value);
+    });
+    const sameCustomer = existing.customer_name === customer.name &&
+      existing.mobile === customer.mobile &&
+      existing.province === customer.province &&
+      existing.city === customer.city &&
+      existing.address === customer.address &&
+      existing.postal_code === customer.postalCode &&
+      (existing.notes ?? "") === customer.notes;
+    if (!sameItems || !sameCustomer) throw new Error("idempotency_conflict");
+
+    const total = Number(existing.total_toman);
+    const shippingToman = Number(existing.shipping_toman);
+    if (!Number.isSafeInteger(total) || !Number.isSafeInteger(shippingToman) || shippingToman < 0 || total < shippingToman) {
+      throw new Error("save_failed");
+    }
+    return {
+      code: existing.order_code,
+      lines: existingLines,
+      subtotal: total - shippingToman,
+      shippingToman,
+      total,
+    };
+  };
+
+  const existingOrder = await findExistingOrder();
+  if (existingOrder) return existingOrder;
+
   const ids = [...new Set(items.map((item) => item.id))];
   const { data: products, error: catalogError } = await db
     .from("products")
@@ -206,8 +257,8 @@ async function createOrder(body: Record<string, unknown>, userId: string | null)
   const total = subtotal + shippingToman;
   if (!Number.isSafeInteger(total)) throw new Error("invalid_items");
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const code = makeOrderCode();
+  for (let attempt = 0; attempt < (stableOrderCode ? 1 : 3); attempt++) {
+    const code = stableOrderCode ?? makeOrderCode();
     const { error } = await db.rpc("place_order_with_rate_limit", {
       p_order_code: code,
       p_customer_name: customer.name,
@@ -227,6 +278,11 @@ async function createOrder(body: Record<string, unknown>, userId: string | null)
     if (error.message?.includes("invalid_order_total")) throw new Error("invalid_items");
     if (error.message?.includes("insufficient_stock")) throw new Error("insufficient_stock");
     if (error.message?.includes("product_not_available")) throw new Error("product_not_available");
+    if (error.code === "23505" && stableOrderCode) {
+      const duplicate = await findExistingOrder();
+      if (duplicate) return duplicate;
+      throw new Error("idempotency_conflict");
+    }
     if (error.code !== "23505") {
       console.error("place-order RPC failed", error.message);
       throw new Error("save_failed");
@@ -274,6 +330,7 @@ Deno.serve(async (request: Request) => {
     if (message === "rate_limited") return json({ error: "rate_limited" }, request, 429);
     if (message === "product_not_available") return json({ error: "product_not_available" }, request, 409);
     if (message === "insufficient_stock") return json({ error: "insufficient_stock" }, request, 409);
+    if (message === "idempotency_conflict") return json({ error: "idempotency_conflict" }, request, 409);
     if (["invalid_customer", "invalid_items", "invalid_option", "invalid_catalog_product", "spam_detected"].includes(message)) {
       return json({ error: message === "spam_detected" ? "invalid_request" : message }, request, 400);
     }
