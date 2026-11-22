@@ -36,6 +36,24 @@ type Placed = { code: string; lines: PricedLine[]; subtotal: number; shippingTom
 
 const empty: CustomerInput = { name: "", mobile: "", province: "" as CustomerInput["province"], city: "", address: "", postalCode: "", notes: "" };
 
+const CHECKOUT_IDEMPOTENCY_STORAGE_KEY = "nabstore-checkout-idempotency";
+
+function getCheckoutIdempotencyKey() {
+  try {
+    const existing = sessionStorage.getItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY);
+    if (existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(existing)) return existing;
+    const created = crypto.randomUUID();
+    sessionStorage.setItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY, created);
+    return created;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+function clearCheckoutIdempotencyKey() {
+  try { sessionStorage.removeItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
+}
+
 function buildSummary(o: Placed) {
   const p = (n: number) => `${formatNumber(n, "fa")} تومان`;
   const lines = o.lines.map((l) => {
@@ -96,14 +114,17 @@ function Checkout() {
       const formElement = e.currentTarget;
       const honeypot = String(new FormData(formElement).get("website") ?? "");
       const { data: sessionData } = await supabase.auth.getSession();
+      const idempotencyKey = getCheckoutIdempotencyKey();
       const res = await submit({
         data: {
           customer: parsed.data,
           items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })),
+          idempotencyKey,
           honeypot,
           ...(sessionData.session?.access_token ? { accessToken: sessionData.session.access_token } : {}),
         },
       });
+      clearCheckoutIdempotencyKey();
       setPlaced({ ...res, customer: parsed.data });
       cart.clear();
       window.scrollTo({ top: 0 });
