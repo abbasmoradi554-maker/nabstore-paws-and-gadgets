@@ -37,6 +37,7 @@ type Order = {
   mobile: string;
   city: string;
   total_toman: number;
+  shipping_toman: number;
   status: string;
   created_at: string;
   province: string;
@@ -122,7 +123,7 @@ function AdminPage() {
       setOrdersError(false);
       const { data, error } = await withTimeout(
         supabase.from("orders")
-          .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, status, created_at")
+          .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman, status, created_at")
           .order("created_at", { ascending: false })
           .range(0, 49)
           .abortSignal(AbortSignal.timeout(10000)),
@@ -530,7 +531,7 @@ function AdminPage() {
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">نام مشتری</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">موبایل</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">شهر</th>
-                  <th className="whitespace-nowrap px-4 py-3 font-semibold">مبلغ کل</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">مبلغ نهایی</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">وضعیت سفارش</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">تاریخ ثبت</th>
                   <th className="whitespace-nowrap px-4 py-3 font-semibold">جزئیات</th>
@@ -544,7 +545,7 @@ function AdminPage() {
                     <td className="whitespace-nowrap px-4 py-3">{order.customer_name}</td>
                     <td dir="ltr" className="whitespace-nowrap px-4 py-3">{order.mobile}</td>
                     <td className="whitespace-nowrap px-4 py-3">{order.city}</td>
-                    <td className="whitespace-nowrap px-4 py-3">{formatMoney(order.total_toman)}</td>
+                    <td className="whitespace-nowrap px-4 py-3"><div>{formatMoney(order.total_toman)}</div><div className="text-xs text-muted-foreground">ارسال: {order.shipping_toman === 0 ? "رایگان" : formatMoney(order.shipping_toman)}</div></td>
                     <td className="px-4 py-3">
                       <select aria-label={`وضعیت سفارش ${order.order_code}`} value={order.status} onChange={(event) => void changeStatus(order.id, event.target.value)} className="h-10 min-w-36 rounded-lg border bg-background px-3 outline-none focus:border-ring">
                         {statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
