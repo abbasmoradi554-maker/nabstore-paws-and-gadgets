@@ -258,7 +258,7 @@ Deno.serve(async (request: Request) => {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
     const { data, error } = await authClient.auth.getUser(match[1]);
-    if (error || !data.user) return json({ error: "unauthorized" }, request, 401);
+    if (error || !data.user || !data.user.email_confirmed_at) return json({ error: "email_verification_required" }, request, 403);
     userId = data.user.id;
   }
 
