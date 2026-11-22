@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
@@ -11,6 +11,11 @@ import { optimizedProductImage } from "@/lib/catalog";
 import { archiveAdminProduct, listAdminProducts, saveAdminProduct } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
+  // Redirect before rendering so a direct URL never falls through to the
+  // order dashboard or depends on a client-side effect during hydration.
+  beforeLoad: () => {
+    throw redirect({ to: "/admin", search: { tab: "products", recovery: false } });
+  },
   component: LegacyProductsAdminRedirect,
   head: () => ({ meta: [{ title: "مدیریت محصولات | ناب استور" }, { name: "robots", content: "noindex,nofollow" }] }),
 });
@@ -58,10 +63,6 @@ function formatMoney(value: number) {
 }
 
 function LegacyProductsAdminRedirect() {
-  const navigate = useNavigate();
-  useEffect(() => {
-    void navigate({ to: "/admin", search: { tab: "products" }, replace: true });
-  }, [navigate]);
   return <main className="container-page flex min-h-40 items-center justify-center text-sm text-muted-foreground">در حال انتقال به داشبورد یکپارچه…</main>;
 }
 
