@@ -2,13 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
-  Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X,
+  Plus, RefreshCw, Save, Search, ShieldCheck, Archive, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedProductImage } from "@/lib/catalog";
-import { deleteAdminProduct, saveAdminProduct } from "@/lib/products-admin.functions";
+import { archiveAdminProduct, saveAdminProduct } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
   component: LegacyProductsAdminRedirect,
@@ -272,12 +272,12 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm("این محصول برای همیشه از فهرست محصولات حذف شود؟")) return;
+    if (!window.confirm("این محصول از فروشگاه خارج و بایگانی شود؟ اطلاعات آن حفظ خواهد شد.")) return;
     try {
-      await withTimeout(deleteAdminProduct({ data: { accessToken, id } }), 15000, "product_delete_timeout");
+      await withTimeout(archiveAdminProduct({ data: { accessToken, id } }), 15000, "product_archive_timeout");
       await load(accessToken);
       if (draft.id === id) clearForm();
-      toast.success("محصول حذف شد");
+      toast.success("محصول بایگانی شد؛ اطلاعات آن حفظ شده است.");
     } catch {
       toast.error("حذف محصول انجام نشد.");
     }
@@ -415,7 +415,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
                 </div>
                 <div className="flex shrink-0 flex-col gap-1">
                   <Button type="button" size="sm" variant="outline" onClick={() => edit(product)}><Eye className="size-3.5" /> ویرایش</Button>
-                  <Button type="button" size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => void remove(product.id)}><Trash2 className="size-3.5" /> حذف</Button>
+                  <Button type="button" size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => void remove(product.id)}><Archive className="size-3.5" /> بایگانی</Button>
                 </div>
               </article>
             ))}
