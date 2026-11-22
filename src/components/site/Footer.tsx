@@ -3,14 +3,20 @@ import { Instagram, Mail, MapPin, Phone, Send, ShieldCheck } from "lucide-react"
 
 import { categories } from "@/data/products";
 import { jalaliYear, useI18n } from "@/lib/i18n";
-import { instagramUrl, isSet, siteConfig, telegramUrl } from "@/lib/site-config";
+import { isSet, siteConfig } from "@/lib/site-config";
+import { useStoreContent } from "@/lib/store-content";
 import { Logo } from "./Logo";
 
 export function Footer() {
   const { t, l, lang } = useI18n();
+  const content = useStoreContent();
+  const store = content.data?.store ?? siteConfig;
+  const footer = content.data?.footer ?? {};
+  const instagram = typeof store.instagram === "string" && isSet(store.instagram) ? (store.instagram.startsWith("http") ? store.instagram : `https://instagram.com/${store.instagram.replace(/^@/, "")}`) : "";
+  const telegram = typeof store.telegram === "string" && isSet(store.telegram) ? `https://t.me/${store.telegram.replace(/^@/, "")}` : "";
   const socials = [
-    { href: instagramUrl(), label: "Instagram", Icon: Instagram },
-    { href: telegramUrl(), label: "Telegram", Icon: Send },
+    { href: instagram, label: "Instagram", Icon: Instagram },
+    { href: telegram, label: "Telegram", Icon: Send },
   ];
   const helpLinks = [
     { to: "/about", label: t("about") },
@@ -24,9 +30,9 @@ export function Footer() {
     { to: "/privacy", label: t("privacy") },
   ] as const;
   const contactItems = [
-    { Icon: Phone, label: t("phone"), value: siteConfig.phone, ltr: true },
-    { Icon: Mail, label: t("email"), value: siteConfig.email, ltr: true },
-    { Icon: MapPin, label: t("address"), value: siteConfig.address, ltr: false },
+    { Icon: Phone, label: t("phone"), value: store.phone, ltr: true },
+    { Icon: Mail, label: t("email"), value: store.email, ltr: true },
+    { Icon: MapPin, label: t("address"), value: store.address, ltr: false },
   ];
 
   return (
@@ -35,7 +41,7 @@ export function Footer() {
         <div className="lg:col-span-4">
           <Logo inverted />
           <p className="mt-2 text-sm font-semibold text-ink-foreground/80">{siteConfig.nameFa}</p>
-          <p className="mt-4 max-w-sm text-sm leading-7 text-ink-foreground/70">{t("footerAbout")}</p>
+          <p className="mt-4 max-w-sm text-sm leading-7 text-ink-foreground/70">{l(footer.about ?? { fa: t("footerAbout"), en: "NABSTORE — an online store." })}</p>
           <p className="mt-6 text-xs font-semibold text-ink-foreground/60">{t("followUs")}</p>
           <div className="mt-3 flex gap-2">
             {socials.map(({ href, label, Icon }) =>
@@ -126,7 +132,7 @@ export function Footer() {
       <div className="border-t border-ink-foreground/10">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-ink-foreground/55 sm:flex-row">
           <span>
-            © {jalaliYear(lang)} {lang === "fa" ? siteConfig.nameFa : siteConfig.nameEn} — {t("rights")}
+            © {jalaliYear(lang)} {lang === "fa" ? siteConfig.nameFa : siteConfig.nameEn} — {l(footer.rights ?? { fa: t("rights"), en: "All rights reserved." })}
           </span>
         </div>
       </div>
