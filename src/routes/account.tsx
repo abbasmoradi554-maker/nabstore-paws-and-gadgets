@@ -63,7 +63,11 @@ function CustomerAccount() {
 
   const authenticate = async (event: FormEvent) => {
     event.preventDefault();
-    if (password.length < 12) { toast.error("رمز عبور باید حداقل ۱۲ کاراکتر باشد."); return; }
+    if (password.length < (mode === "signup" ? 12 : 8)) { toast.error(mode === "signup" ? "رمز عبور باید حداقل ۱۲ کاراکتر باشد." : "رمز عبور کوتاه است."); return; }
+    if (mode === "signup" && !(/\p{Ll}/u.test(password) && /\p{Lu}/u.test(password) && /\d/.test(password) && /[^\p{L}\d]/u.test(password))) {
+      toast.error("برای امنیت، رمز ثبت‌نام باید شامل حروف کوچک و بزرگ، عدد و نماد باشد.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "login") {
@@ -130,12 +134,12 @@ function CustomerAccount() {
           <label className="grid gap-2 text-sm font-medium">ایمیل
             <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
-          <label className="grid gap-2 text-sm font-medium">رمز عبور (حداقل ۱۲ کاراکتر)
+          <label className="grid gap-2 text-sm font-medium">رمز عبور (ثبت‌نام: حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد)
             <input type="password" required minLength={12} autoComplete={mode==="login"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
           <Button type="submit" disabled={busy} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
           <button type="button" className="text-sm text-primary underline" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
-          <p className="text-xs leading-6 text-muted-foreground">برای فعال‌سازی حساب ممکن است لازم باشد ایمیل خود را تأیید کنید. رمز عبور شما در ناب استور ذخیره یا قابل مشاهده نیست؛ مدیریت آن بر عهده سرویس امن Supabase Auth است.</p>
+          <p className="text-xs leading-6 text-muted-foreground">برای فعال‌سازی حساب ممکن است لازم باشد ایمیل خود را تأیید کنید. در ثبت‌نام رمز قوی با حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد انتخاب کنید. رمز عبور شما در ناب استور ذخیره یا قابل مشاهده نیست؛ مدیریت آن بر عهده سرویس امن Supabase Auth است.</p>
         </form>
       ) : (
         <div className="grid gap-6">
