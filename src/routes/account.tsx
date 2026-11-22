@@ -107,7 +107,11 @@ function CustomerAccount() {
     setBusy(true);
     try {
       if (mode === "login") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { data, error } = await withTimeout(
+          supabase.auth.signInWithPassword({ email: email.trim(), password }),
+          15000,
+          "customer_login_timeout",
+        );
         if (error) throw error;
         setSession(data.session);
         void loadOrders().catch((loadError) => {
@@ -116,10 +120,14 @@ function CustomerAccount() {
         });
         toast.success("با موفقیت وارد حساب شدید.");
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(), password,
-          options: { emailRedirectTo: `${window.location.origin}/account` },
-        });
+        const { data, error } = await withTimeout(
+          supabase.auth.signUp({
+            email: email.trim(), password,
+            options: { emailRedirectTo: `${window.location.origin}/account` },
+          }),
+          15000,
+          "customer_signup_timeout",
+        );
         if (error) throw error;
         if (data.session) {
           setSession(data.session);
