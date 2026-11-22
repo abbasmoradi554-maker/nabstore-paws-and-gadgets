@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Instagram, Mail, MapPin, Phone, Send } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
+import { useStoreContent } from "@/lib/store-content";
 import { instagramUrl, isSet, siteConfig, telegramUrl } from "@/lib/site-config";
 
 export const Route = createFileRoute("/contact")({
@@ -22,12 +23,18 @@ export const Route = createFileRoute("/contact")({
 
 function Contact() {
   const { t } = useI18n();
+  const content = useStoreContent();
+  const store = content.data?.store ?? siteConfig;
+  const instagram = typeof store.instagram === "string" ? store.instagram : "";
+  const telegram = typeof store.telegram === "string" ? store.telegram : "";
+  const instagramHref = instagram && !/^\\[.*\\]$/.test(instagram) ? (instagram.startsWith("http") ? instagram : `https://instagram.com/${instagram.replace(/^@/, "")}`) : "";
+  const telegramHref = telegram && !/^\\[.*\\]$/.test(telegram) ? `https://t.me/${telegram.replace(/^@/, "")}` : "";
   const items = [
-    { Icon: Phone, label: t("phone"), value: siteConfig.phone, href: isSet(siteConfig.phone) ? `tel:${siteConfig.phone}` : "", ltr: true },
-    { Icon: Mail, label: t("email"), value: siteConfig.email, href: isSet(siteConfig.email) ? `mailto:${siteConfig.email}` : "", ltr: true },
-    { Icon: MapPin, label: t("address"), value: siteConfig.address, href: "", ltr: false },
-    { Icon: Instagram, label: "Instagram", value: siteConfig.instagram, href: instagramUrl(), ltr: true },
-    { Icon: Send, label: "Telegram", value: siteConfig.telegram, href: telegramUrl(), ltr: true },
+    { Icon: Phone, label: t("phone"), value: store.phone, href: isSet(store.phone) ? `tel:${store.phone}` : "", ltr: true },
+    { Icon: Mail, label: t("email"), value: store.email, href: isSet(store.email) ? `mailto:${store.email}` : "", ltr: true },
+    { Icon: MapPin, label: t("address"), value: store.address, href: "", ltr: false },
+    { Icon: Instagram, label: "Instagram", value: store.instagram, href: instagramHref, ltr: true },
+    { Icon: Send, label: "Telegram", value: store.telegram, href: telegramHref, ltr: true },
   ];
   return (
     <section className="container-page max-w-3xl pt-10">
