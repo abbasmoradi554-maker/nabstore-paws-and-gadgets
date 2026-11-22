@@ -94,15 +94,15 @@ export const pages = {
   shipping: {
     title: L("ارسال سفارش", "Shipping"),
     intro: L(
-      "سفارش‌ها به سراسر کشور ارسال می‌شوند. روش، هزینه و زمان ارسال هنگام تأیید سفارش با شما هماهنگ می‌شود.",
-      "Orders ship nationwide. Method, cost and timing are confirmed when your order is approved.",
+      "ارسال عادی ۵۹ هزار تومان است و برای سفارش‌های ۲ میلیون تومان و بیشتر رایگان خواهد بود. زمان تحویل به مقصد و شرکت حمل بستگی دارد.",
+      "Standard shipping is 59,000 Toman and free for orders of 2,000,000 Toman or more. Delivery time depends on destination and carrier.",
     ),
     sections: [
       {
         title: L("هزینه ارسال", "Shipping cost"),
         body: L(
-          "هزینه ارسال به شهر مقصد و وزن بسته بستگی دارد و پیش از پرداخت به شما اعلام می‌شود.",
-          "Shipping cost depends on the destination and parcel weight, and is shared with you before payment.",
+          "هزینه ارسال عادی ۵۹ هزار تومان است. برای خریدهای ۲ میلیون تومان و بیشتر، ارسال رایگان است. این مبلغ از پنل مدیریت قابل تغییر است.",
+          "Standard shipping is 59,000 Toman. Orders of 2,000,000 Toman or more ship free. The amount can be changed in the admin panel.",
         ),
       },
       {
