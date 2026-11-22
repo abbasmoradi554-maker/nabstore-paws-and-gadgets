@@ -12,6 +12,8 @@ export function Footer() {
   const content = useStoreContent();
   const store = content.data?.store ?? siteConfig;
   const footer = content.data?.footer ?? {};
+  const footerAbout = footer.about && typeof footer.about.fa === "string" && typeof footer.about.en === "string" ? footer.about : { fa: t("footerAbout"), en: "NABSTORE — an online store." };
+  const footerRights = footer.rights && typeof footer.rights.fa === "string" && typeof footer.rights.en === "string" ? footer.rights : { fa: t("rights"), en: "All rights reserved." };
   const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
   const instagram = typeof store.instagram === "string" && isSet(store.instagram) ? (store.instagram.startsWith("http") ? store.instagram : `https://instagram.com/${store.instagram.replace(/^@/, "")}`) : "";
   const telegram = typeof store.telegram === "string" && isSet(store.telegram) ? `https://t.me/${store.telegram.replace(/^@/, "")}` : "";
@@ -42,7 +44,7 @@ export function Footer() {
         <div className="lg:col-span-4">
           <Logo inverted />
           <p className="mt-2 text-sm font-semibold text-ink-foreground/80">{siteConfig.nameFa}</p>
-          <p className="mt-4 max-w-sm text-sm leading-7 text-ink-foreground/70">{l(footer.about ?? { fa: t("footerAbout"), en: "NABSTORE — an online store." })}</p>
+          <p className="mt-4 max-w-sm text-sm leading-7 text-ink-foreground/70">{l(footerAbout)}</p>
           <p className="mt-6 text-xs font-semibold text-ink-foreground/60">{t("followUs")}</p>
           <div className="mt-3 flex gap-2">
             {socials.map(({ href, label, Icon }) =>
@@ -133,7 +135,7 @@ export function Footer() {
       <div className="border-t border-ink-foreground/10">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-ink-foreground/55 sm:flex-row">
           <span>
-            © {jalaliYear(lang)} {lang === "fa" ? siteConfig.nameFa : siteConfig.nameEn} — {l(footer.rights ?? { fa: t("rights"), en: "All rights reserved." })}
+            © {jalaliYear(lang)} {lang === "fa" ? siteConfig.nameFa : siteConfig.nameEn} — {l(footerRights)}
           </span>
         </div>
       </div>
