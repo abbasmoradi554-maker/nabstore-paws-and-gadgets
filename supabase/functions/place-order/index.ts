@@ -197,6 +197,8 @@ async function createOrder(body: Record<string, unknown>) {
     });
     if (!error) return { code, lines, total };
     if (error.message?.includes("rate_limited")) throw new Error("rate_limited");
+    if (error.message?.includes("insufficient_stock")) throw new Error("insufficient_stock");
+    if (error.message?.includes("product_not_available")) throw new Error("product_not_available");
     if (error.code !== "23505") {
       console.error("place-order RPC failed", error.message);
       throw new Error("save_failed");
@@ -225,6 +227,7 @@ Deno.serve(async (request: Request) => {
     const message = error instanceof Error ? error.message : "save_failed";
     if (message === "rate_limited") return json({ error: "rate_limited" }, 429);
     if (message === "product_not_available") return json({ error: "product_not_available" }, 409);
+    if (message === "insufficient_stock") return json({ error: "insufficient_stock" }, 409);
     if (["invalid_customer", "invalid_items", "invalid_option", "invalid_catalog_product", "spam_detected"].includes(message)) {
       return json({ error: message === "spam_detected" ? "invalid_request" : message }, 400);
     }
