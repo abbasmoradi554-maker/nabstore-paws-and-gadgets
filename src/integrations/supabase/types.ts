@@ -29,6 +29,8 @@ export type Database = {
           province: string
           status: string
           total_toman: number
+          shipping_toman: number
+          user_id: string | null
         }
         Insert: {
           address: string
@@ -44,6 +46,8 @@ export type Database = {
           province: string
           status?: string
           total_toman: number
+          shipping_toman?: number
+          user_id?: string | null
         }
         Update: {
           address?: string
@@ -136,8 +140,14 @@ export type Database = {
           p_postal_code: string
           p_province: string
           p_total_toman: number
+          p_shipping_toman: number
+          p_user_id?: string | null
         }
         Returns: Json
+      }
+      claim_order_for_customer: {
+        Args: { p_order_code: string; p_mobile: string }
+        Returns: boolean
       }
     }
     Enums: {
