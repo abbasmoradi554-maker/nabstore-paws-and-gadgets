@@ -6,7 +6,7 @@ type Row = {
   id:string; name:{fa:string;en:string}; price:number; old_price:number|null; category:string;
   subcategory:string|null; short:{fa:string;en:string}; description:{fa:string;en:string};
   specs: Product["specs"]; options: Array<{ type: string; values: Array<{ fa: string; en: string }> }>;
-  images:string[]; tags:string[]; added_order:number;
+  images:string[]; tags:string[]; added_order:number; stock_quantity:number|null;
 };
 
 /** Serve third-party product photos through a free image CDN, resized and converted to WebP. */
@@ -38,7 +38,7 @@ function mapProduct(row:Row):Product {
 export function useCatalogProducts() {
   return useQuery({
     queryKey:["public-catalog"],
-    queryFn:async()=>{const result=await listActiveProducts();return (result.products as Row[]).map(mapProduct);},
+    queryFn:async()=>{const result=await listActiveProducts();return (result.products as Row[]).filter(row=>row.stock_quantity===null||row.stock_quantity>0).map(mapProduct);},
     staleTime:30_000,
   });
 }
