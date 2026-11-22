@@ -17,7 +17,7 @@ export const Route = createFileRoute("/admin/products")({
 
 type Localized = { fa: string; en: string };
 type Product = {
-  id: string; name: Localized; price: number; old_price: number | null;
+  id: string; name: Localized; price: number; old_price: number | null; stock_quantity: number | null;
   category: string; subcategory: string | null; short: Localized; description: Localized;
   specs: Array<{ label: Localized; value: Localized }>;
   options: Array<{ type: "model" | "color" | "size" | "design"; values: Localized[] }>;
@@ -34,7 +34,7 @@ const tagLabels: Record<string, string> = {
   trending: "ترند", pick: "انتخاب ناب", recommended: "پیشنهادی",
 };
 const blank = (): Product => ({
-  id: "", name: { fa: "", en: "" }, price: 1, old_price: null,
+  id: "", name: { fa: "", en: "" }, price: 1, old_price: null, stock_quantity: null,
   category: "phone-cases", subcategory: null,
   short: { fa: "", en: "" }, description: { fa: "", en: "" },
   specs: [], options: [], tags: [], added_order: 0, images: [], active: true,
@@ -89,7 +89,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
     try {
       const { data, error } = await withTimeout(
         supabase.from("products")
-          .select("id, name, price, old_price, category, subcategory, short, description, specs, options, tags, added_order, images, active, updated_at")
+          .select("id, name, price, old_price, stock_quantity, category, subcategory, short, description, specs, options, tags, added_order, images, active, updated_at")
           .order("updated_at", { ascending: false })
           .limit(200),
         9000,
@@ -345,10 +345,13 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
             <Field label="نام فارسی"><input required maxLength={180} value={draft.name.fa} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, fa: e.target.value } })} className={inputClass} /></Field>
             <Field label="نام انگلیسی"><input maxLength={180} dir="ltr" value={draft.name.en} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, en: e.target.value } })} className={inputClass} /></Field>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <Field label="قیمت فروش (تومان)"><input required type="number" min="1" max="1000000000" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className={inputClass} /></Field>
             <Field label="قیمت قبلی (اختیاری)"><input type="number" min="0" max="1000000000" value={draft.old_price ?? ""} onChange={(e) => setDraft({ ...draft, old_price: e.target.value === "" ? null : Number(e.target.value) })} className={inputClass} /></Field>
             <Field label="ترتیب نمایش"><input type="number" min="0" value={draft.added_order} onChange={(e) => setDraft({ ...draft, added_order: Number(e.target.value) })} className={inputClass} /></Field>
+            <Field label="موجودی (عدد)" hint="خالی = کنترل موجودی غیرفعال؛ صفر = ناموجود">
+              <input type="number" min="0" max="1000000" step="1" value={draft.stock_quantity ?? ""} onChange={(e) => setDraft({ ...draft, stock_quantity: e.target.value === "" ? null : Number(e.target.value) })} className={inputClass} />
+            </Field>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="زیردسته"><input maxLength={80} value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className={inputClass} placeholder="مثلاً ظرف آب اتوماتیک" /></Field>
@@ -407,6 +410,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
                   <div className="flex flex-wrap items-center gap-2"><p className="truncate font-bold">{product.name?.fa || product.id}</p><span className={product.active ? "rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-700" : "rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"}>{product.active ? "فعال" : "غیرفعال"}</span></div>
                   <p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{product.id}</p>
                   <p className="mt-2 text-sm font-semibold">{formatMoney(product.price)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{product.stock_quantity === null ? "موجودی ثبت نشده" : product.stock_quantity === 0 ? "ناموجود" : `موجودی: ${new Intl.NumberFormat("fa-IR").format(product.stock_quantity)} عدد`}</p>
                   <div className="mt-2 flex flex-wrap gap-1">{(product.tags ?? []).map((tag) => <span key={tag} className="rounded-md bg-primary/8 px-2 py-0.5 text-[10px] text-primary">{tagLabels[tag] ?? tag}</span>)}</div>
                 </div>
                 <div className="flex shrink-0 flex-col gap-1">
