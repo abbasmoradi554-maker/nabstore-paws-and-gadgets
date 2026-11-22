@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedProductImage } from "@/lib/catalog";
-import { archiveAdminProduct, saveAdminProduct } from "@/lib/products-admin.functions";
+import { archiveAdminProduct, listAdminProducts, saveAdminProduct } from "@/lib/products-admin.functions";
 
 export const Route = createFileRoute("/admin/products")({
   component: LegacyProductsAdminRedirect,
@@ -84,19 +84,16 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
   const [productsLoading, setProductsLoading] = useState(false);
   const restoredToken = useRef("");
 
-  const load = async (_token?: string) => {
+  const load = async (token = accessToken) => {
     setProductsLoading(true);
     try {
-      const { data, error } = await withTimeout(
-        supabase.from("products")
-          .select("id, name, price, old_price, stock_quantity, category, subcategory, short, description, specs, options, tags, added_order, images, active, updated_at")
-          .order("updated_at", { ascending: false })
-          .limit(200),
+      if (!token) throw new Error("admin_session_missing");
+      const result = await withTimeout(
+        listAdminProducts({ data: { accessToken: token } }),
         9000,
         "products_timeout",
       );
-      if (error) throw error;
-      setItems((data ?? []) as Product[]);
+      setItems((result.products ?? []) as Product[]);
     } finally {
       setProductsLoading(false);
     }
