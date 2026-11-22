@@ -1,11 +1,20 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "apikey, content-type, x-client-info",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json; charset=utf-8",
-};
+const allowedOrigins = new Set([
+  "https://feature-store-admin-cms-nabstore-paws-and-gadgets.abbasmoradi554.workers.dev",
+  "https://nabstore-paws-and-gadgets.nabstore.workers.dev",
+]);
+function corsHeadersFor(request: Request) {
+  const origin = request.headers.get("Origin") ?? "";
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "apikey, authorization, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+    "Content-Type": "application/json; charset=utf-8",
+  };
+  if (allowedOrigins.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+}
 
 const provinces = new Set([
   "آذربایجان شرقی", "آذربایجان غربی", "اردبیل", "اصفهان", "البرز", "ایلام", "بوشهر", "تهران",
@@ -14,8 +23,8 @@ const provinces = new Set([
   "گلستان", "گیلان", "لرستان", "مازندران", "مرکزی", "هرمزگان", "همدان", "یزد",
 ]);
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders });
+function json(body: unknown, request: Request, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: corsHeadersFor(request) });
 }
 
 function latinDigits(value: string) {
@@ -126,7 +135,7 @@ function validateCustomer(value: unknown) {
   return { name, mobile, province, city, address, postalCode, notes };
 }
 
-async function createOrder(body: Record<string, unknown>) {
+async function createOrder(body: Record<string, unknown>, userId: string | null) {
   if (typeof body.honeypot === "string" && body.honeypot.trim()) throw new Error("spam_detected");
   const customer = validateCustomer(body.customer);
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 30) {
@@ -178,8 +187,24 @@ async function createOrder(body: Record<string, unknown>) {
       lineTotal,
     };
   });
-  const total = lines.reduce((sum, line) => sum + line.lineTotal, 0);
-  if (!Number.isSafeInteger(total) || total <= 0) throw new Error("invalid_items");
+  const subtotal = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+  if (!Number.isSafeInteger(subtotal) || subtotal <= 0) throw new Error("invalid_items");
+
+  const { data: shippingRow, error: shippingError } = await db
+    .from("store_content").select("value").eq("key", "shipping").maybeSingle();
+  if (shippingError || !shippingRow?.value || typeof shippingRow.value !== "object") {
+    throw new Error("shipping_configuration_missing");
+  }
+  const shippingConfig = shippingRow.value as Record<string, unknown>;
+  const flatFee = Number(shippingConfig.flatFeeToman);
+  const freeAbove = Number(shippingConfig.freeAboveToman);
+  const shippingEnabled = shippingConfig.enabled !== false;
+  if (!Number.isSafeInteger(flatFee) || flatFee < 0 || !Number.isSafeInteger(freeAbove) || freeAbove < 0) {
+    throw new Error("shipping_configuration_missing");
+  }
+  const shippingToman = !shippingEnabled || (freeAbove > 0 && subtotal >= freeAbove) ? 0 : flatFee;
+  const total = subtotal + shippingToman;
+  if (!Number.isSafeInteger(total)) throw new Error("invalid_items");
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const code = makeOrderCode();
@@ -194,9 +219,12 @@ async function createOrder(body: Record<string, unknown>) {
       p_notes: customer.notes,
       p_items: lines,
       p_total_toman: total,
+      p_shipping_toman: shippingToman,
+      p_user_id: userId,
     });
-    if (!error) return { code, lines, total };
+    if (!error) return { code, lines, subtotal, shippingToman, total };
     if (error.message?.includes("rate_limited")) throw new Error("rate_limited");
+    if (error.message?.includes("invalid_order_total")) throw new Error("invalid_items");
     if (error.message?.includes("insufficient_stock")) throw new Error("insufficient_stock");
     if (error.message?.includes("product_not_available")) throw new Error("product_not_available");
     if (error.code !== "23505") {
@@ -208,34 +236,52 @@ async function createOrder(body: Record<string, unknown>) {
 }
 
 Deno.serve(async (request: Request) => {
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  const headers = corsHeadersFor(request);
+  if (request.method === "OPTIONS") {
+    const origin = request.headers.get("Origin") ?? "";
+    if (origin && !allowedOrigins.has(origin)) return new Response(null, { status: 403, headers });
+    return new Response(null, { status: 204, headers });
+  }
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, request, 405);
 
   const apiKey = request.headers.get("apikey") ?? "";
   const allowedKeys = allowedPublishableKeys();
-  if (allowedKeys.size === 0) return json({ error: "service_unavailable" }, 503);
-  if (!allowedKeys.has(apiKey)) return json({ error: "unauthorized" }, 401);
+  if (allowedKeys.size === 0) return json({ error: "service_unavailable" }, request, 503);
+  if (!allowedKeys.has(apiKey)) return json({ error: "unauthorized" }, request, 401);
+
+  const authorization = request.headers.get("Authorization") ?? "";
+  let userId: string | null = null;
+  if (authorization) {
+    const match = authorization.match(/^Bearer\s+(.+)$/i);
+    if (!match) return json({ error: "unauthorized" }, request, 401);
+    const authClient = createClient(Deno.env.get("SUPABASE_URL")!, apiKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+    const { data, error } = await authClient.auth.getUser(match[1]);
+    if (error || !data.user) return json({ error: "unauthorized" }, request, 401);
+    userId = data.user.id;
+  }
 
   try {
     const length = Number(request.headers.get("content-length") ?? "0");
     if (length > 64 * 1024) return json({ error: "request_too_large" }, 413);
     const body = await request.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_request" }, 400);
-    const result = await createOrder(body as Record<string, unknown>);
-    return json(result);
+    const result = await createOrder(body as Record<string, unknown>, userId);
+    return json(result, request);
   } catch (error) {
     const message = error instanceof Error ? error.message : "save_failed";
-    if (message === "rate_limited") return json({ error: "rate_limited" }, 429);
-    if (message === "product_not_available") return json({ error: "product_not_available" }, 409);
-    if (message === "insufficient_stock") return json({ error: "insufficient_stock" }, 409);
+    if (message === "rate_limited") return json({ error: "rate_limited" }, request, 429);
+    if (message === "product_not_available") return json({ error: "product_not_available" }, request, 409);
+    if (message === "insufficient_stock") return json({ error: "insufficient_stock" }, request, 409);
     if (["invalid_customer", "invalid_items", "invalid_option", "invalid_catalog_product", "spam_detected"].includes(message)) {
-      return json({ error: message === "spam_detected" ? "invalid_request" : message }, 400);
+      return json({ error: message === "spam_detected" ? "invalid_request" : message }, request, 400);
     }
     if (message === "server_configuration_missing") {
       console.error("place-order server configuration is incomplete");
-      return json({ error: "service_unavailable" }, 503);
+      return json({ error: "service_unavailable" }, request, 503);
     }
     console.error("place-order failed", message);
-    return json({ error: "save_failed" }, 500);
+    return json({ error: "save_failed" }, request, 500);
   }
 });
