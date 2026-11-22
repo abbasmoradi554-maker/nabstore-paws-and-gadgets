@@ -7,7 +7,8 @@ export function InfoPage({ page }: { page: InfoPageData }) {
   const { l } = useI18n();
   const content = useStoreContent();
   const pageKey = Object.entries(defaultPages).find(([, value]) => value === page)?.[0];
-  const pageData = (pageKey && content.data?.pages?.[pageKey]) ? content.data.pages[pageKey] : page;
+  const candidate = pageKey ? content.data?.pages?.[pageKey] : null;
+  const pageData = candidate?.title && candidate?.intro && Array.isArray(candidate?.sections) ? candidate : page;
   return (
     <section className="container-page max-w-3xl pt-10">
       <h1 className="text-3xl font-bold">{l(pageData.title)}</h1>
