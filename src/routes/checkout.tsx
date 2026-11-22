@@ -11,7 +11,8 @@ import { formatNumber, useI18n, type DictKey } from "@/lib/i18n";
 import { customerSchema, provinces, type CustomerInput } from "@/lib/order-schema";
 import type { PricedLine } from "@/lib/order-pricing";
 import { placeOrder } from "@/lib/orders.functions";
-import { siteConfig, telegramUrl, whatsappUrl } from "@/lib/site-config";
+import { siteConfig } from "@/lib/site-config";
+import { useStoreContent } from "@/lib/store-content";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/checkout")({
@@ -225,9 +226,13 @@ function FormField({ label, error, className, children }: { label: string; error
 
 function OrderPlaced({ order }: { order: Placed }) {
   const { t, price, num } = useI18n();
+  const content = useStoreContent();
+  const store = content.data?.store ?? siteConfig;
   const summary = buildSummary(order);
-  const tg = telegramUrl();
-  const wa = whatsappUrl(summary);
+  const telegram = typeof store.telegram === "string" ? store.telegram.replace(/^@/, "") : "";
+  const whatsapp = typeof store.whatsapp === "string" ? store.whatsapp.replace(/\\D/g, "") : "";
+  const tg = telegram && !/^\\[.*\\]$/.test(telegram) ? `https://t.me/${telegram}` : "";
+  const wa = whatsapp && !/^\\[.*\\]$/.test(whatsapp) ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(summary)}` : "";
 
   const copy = async () => {
     try {
