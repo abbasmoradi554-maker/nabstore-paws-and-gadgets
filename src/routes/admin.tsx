@@ -12,7 +12,7 @@ const LazyAdminProductsPage = lazy(() =>
   import("./admin.products").then((module) => ({ default: module.AdminProductsPage })),
 );
 const LazyAdminContentPage = lazy(() =>
-  import("./admin.content").then((module) => ({ default: module.AdminContentPage })),
+  import("@/components/admin/AdminContentPage").then((module) => ({ default: module.AdminContentPage })),
 );
 
 
