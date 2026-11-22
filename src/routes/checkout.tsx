@@ -109,7 +109,7 @@ function Checkout() {
       window.scrollTo({ top: 0 });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : message.includes("insufficient_stock") ? "موجودی این محصول کافی نیست؛ سبد خرید را به‌روزرسانی کنید." : t("orderFailed"));
+      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : message.includes("email_verification_required") ? "برای اتصال سفارش به حساب، ابتدا ایمیل حساب را تأیید کنید؛ یا بدون ورود سفارش را ثبت کنید." : message.includes("insufficient_stock") ? "موجودی این محصول کافی نیست؛ سبد خرید را به‌روزرسانی کنید." : t("orderFailed"));
     } finally {
       setPending(false);
     }
