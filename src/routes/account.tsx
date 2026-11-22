@@ -21,6 +21,14 @@ const statuses: Record<string,string> = {
 };
 const money = (value:number) => `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  let timer: number | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => { timer = window.setTimeout(() => reject(new Error(message)), ms); }),
+  ]).finally(() => { if (timer !== undefined) window.clearTimeout(timer); });
+}
+
 function CustomerAccount() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>(null);
   const [loading, setLoading] = useState(true);
@@ -34,31 +42,59 @@ function CustomerAccount() {
   const [showClaim, setShowClaim] = useState(false);
 
   const loadOrders = async () => {
-    const { data, error } = await supabase.from("orders")
+    const request = supabase.from("orders")
       .select("id,order_code,customer_name,mobile,city,province,total_toman,shipping_toman,status,created_at,items")
-      .order("created_at", { ascending: false }).limit(50);
+      .order("created_at", { ascending: false }).limit(50)
+      .abortSignal(AbortSignal.timeout(8000));
+    const { data, error } = await withTimeout(request, 9000, "customer_orders_timeout");
     if (error) throw error;
     setOrders((data ?? []) as Order[]);
   };
 
   useEffect(() => {
     let active = true;
-    void (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!active) return;
-      setSession(data.session);
-      if (data.session) {
-        try { await loadOrders(); } catch (error) { console.error("Customer order history failed", error); toast.error("دریافت سفارش‌ها انجام نشد."); }
-      }
+    // Render the account shell even when the auth service is slow or unreachable.
+    // Session restoration continues in the background and can still update the page.
+    const fallback = window.setTimeout(() => {
       if (active) setLoading(false);
-    })();
+    }, 1800);
+
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (error) console.error("Customer session restore failed", error);
+      setSession(data.session);
+      setLoading(false);
+      window.clearTimeout(fallback);
+      if (data.session) {
+        void loadOrders().catch((loadError) => {
+          console.error("Customer order history failed", loadError);
+          if (active) toast.error("دریافت سفارش‌ها طول کشید؛ می‌توانید بعداً دوباره تلاش کنید.");
+        });
+      }
+    }).catch((error) => {
+      if (!active) return;
+      console.error("Customer session restore failed", error);
+      setLoading(false);
+      window.clearTimeout(fallback);
+    });
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
       setSession(nextSession);
       if (nextSession) {
-        window.setTimeout(() => { void loadOrders().catch((error) => { console.error(error); toast.error("دریافت سفارش‌ها انجام نشد."); }); }, 0);
+        window.setTimeout(() => {
+          if (active) void loadOrders().catch((error) => {
+            console.error("Customer order history refresh failed", error);
+            if (active) toast.error("دریافت سفارش‌ها انجام نشد؛ دوباره تلاش کنید.");
+          });
+        }, 0);
       } else setOrders([]);
     });
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    return () => {
+      active = false;
+      window.clearTimeout(fallback);
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const authenticate = async (event: FormEvent) => {
@@ -74,7 +110,10 @@ function CustomerAccount() {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
         setSession(data.session);
-        await loadOrders();
+        void loadOrders().catch((loadError) => {
+          console.error("Customer orders after login failed", loadError);
+          toast.error("ورود موفق بود؛ دریافت سفارش‌ها کمی طول کشید و می‌توانید دوباره تلاش کنید.");
+        });
         toast.success("با موفقیت وارد حساب شدید.");
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -84,7 +123,10 @@ function CustomerAccount() {
         if (error) throw error;
         if (data.session) {
           setSession(data.session);
-          await loadOrders();
+          void loadOrders().catch((loadError) => {
+            console.error("Customer orders after signup failed", loadError);
+            toast.error("حساب ساخته شد؛ دریافت سفارش‌ها کمی طول کشید.");
+          });
           toast.success("حساب مشتری ساخته شد.");
         } else {
           toast.success("لینک تأیید به ایمیل شما ارسال شد؛ پس از تأیید، وارد حساب شوید.");
