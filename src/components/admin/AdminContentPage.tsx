@@ -7,9 +7,10 @@ import { pages, faqs } from "@/data/pages";
 import { categories } from "@/data/products";
 import { siteConfig } from "@/lib/site-config";
 
-type SectionKey = "store" | "home" | "footer" | "categories" | "pages" | "faq";
+type SectionKey = "store" | "shipping" | "home" | "footer" | "categories" | "pages" | "faq";
 const sectionMeta: Record<SectionKey, { title: string; description: string; icon: typeof Store }> = {
   store: { title: "اطلاعات فروشگاه", description: "شماره تماس، ایمیل، نشانی و شبکه‌های اجتماعی", icon: Store },
+  shipping: { title: "هزینه و ارسال", description: "هزینه ثابت، حد خرید ارسال رایگان و فعال‌سازی هزینه ارسال", icon: Store },
   home: { title: "صفحه اصلی", description: "تیترها، متن‌ها و پیام بالای سایت", icon: Home },
   footer: { title: "پاورقی سایت", description: "معرفی کوتاه و متن حقوقی پایین سایت", icon: PanelsTopLeft },
   categories: { title: "دسته‌بندی‌ها", description: "عنوان، توضیحات، تصویر و زیر‌دسته‌ها؛ شناسه‌ها را ثابت نگه دارید", icon: PanelsTopLeft },
@@ -18,6 +19,7 @@ const sectionMeta: Record<SectionKey, { title: string; description: string; icon
 };
 const defaults: Record<SectionKey, unknown> = {
   store: siteConfig,
+  shipping: { flatFeeToman: 59000, freeAboveToman: 2000000, enabled: true },
   home: {
     heroEyebrow: { fa: "مجموعه جدید فصل", en: "New season collection" },
     heroTitle: { fa: "آسایش هوشمند برای همراهان کوچک شما", en: "Smart comfort for your little companions" },
