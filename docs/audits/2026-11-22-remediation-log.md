@@ -44,8 +44,9 @@ Latest reviewed commit: `7cad1dcaaa01e9d14c7f492a8d6b80161bca55fe`
   - Direct `/admin?tab=products` rendered the login screen.
   - Product detail, add-to-cart, cart, and checkout form rendered; cart item and total carried through to checkout.
   - No JavaScript page errors or console errors were reported in the final browser run.
+  - Mobile viewport checks at 390 px width passed for Home, Shop, Cart, Checkout and Admin with no horizontal overflow.
   - No order was submitted; the checkout flow was intentionally stopped before submission.
-- One third-party product image request for the smart moving cat ball was blocked by the remote image host (ORB); the page's image error fallback is active. This image needs a verified replacement.
+- One direct product-detail image request for the smart moving cat ball intermittently returned ORB. A subsequent catalog-grid test loaded all six product images successfully through the image CDN with no failed requests; monitor this source, but no persistent catalog-image failure was reproduced.
 - Preview database policy inspection confirmed the order RPC's execute privilege is not granted to `anon` or `authenticated`; it is available to `service_role`.
 - No Production deploy, Production schema change, order mutation, PR merge, or traffic change was performed.
 
