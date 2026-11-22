@@ -111,7 +111,7 @@ function AdminPage() {
   const [submitting, setSubmitting] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<"orders" | "products">(tab);
+  const [activeTab, setActiveTab] = useState<"orders" | "products" | "content">(tab);
 
   // Keep the visible tab synchronized with browser back/forward navigation.
   useEffect(() => setActiveTab(tab), [tab]);
