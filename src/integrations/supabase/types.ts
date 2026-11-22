@@ -63,6 +63,8 @@ export type Database = {
           province?: string
           status?: string
           total_toman?: number
+          shipping_toman?: number
+          user_id?: string | null
         }
         Relationships: []
       }
