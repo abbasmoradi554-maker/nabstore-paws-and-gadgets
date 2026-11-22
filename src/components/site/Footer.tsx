@@ -12,6 +12,7 @@ export function Footer() {
   const content = useStoreContent();
   const store = content.data?.store ?? siteConfig;
   const footer = content.data?.footer ?? {};
+  const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
   const instagram = typeof store.instagram === "string" && isSet(store.instagram) ? (store.instagram.startsWith("http") ? store.instagram : `https://instagram.com/${store.instagram.replace(/^@/, "")}`) : "";
   const telegram = typeof store.telegram === "string" && isSet(store.telegram) ? `https://t.me/${store.telegram.replace(/^@/, "")}` : "";
   const socials = [
@@ -73,7 +74,7 @@ export function Footer() {
         <div className="lg:col-span-3">
           <h3 className="text-sm font-bold">{t("footerShop")}</h3>
           <ul className="mt-4 grid gap-2.5 text-sm text-ink-foreground/70">
-            {categories.map((c) => (
+            {visibleCategories.map((c: (typeof categories)[number]) => (
               <li key={c.slug}>
                 <Link to="/category/$slug" params={{ slug: c.slug }} className="hover:text-ink-foreground">
                   {l(c.name)}
