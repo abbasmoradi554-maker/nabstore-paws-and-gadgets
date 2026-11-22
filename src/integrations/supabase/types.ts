@@ -76,6 +76,7 @@ export type Database = {
           price: number
           short: Json
           specs: Json
+          stock_quantity: number | null
           subcategory: string | null
           tags: Json
           updated_at: string
@@ -93,6 +94,7 @@ export type Database = {
           price: number
           short?: Json
           specs?: Json
+          stock_quantity?: number | null
           subcategory?: string | null
           tags?: Json
           updated_at?: string
@@ -110,6 +112,7 @@ export type Database = {
           price?: number
           short?: Json
           specs?: Json
+          stock_quantity?: number | null
           subcategory?: string | null
           tags?: Json
           updated_at?: string
