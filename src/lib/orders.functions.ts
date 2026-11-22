@@ -12,6 +12,8 @@ export const placeOrder = createServerFn({ method: "POST" })
       throw new Error("save_failed");
     }
 
+    const { accessToken, ...orderData } = data;
+
     // Keep all privileged database work inside Supabase Edge Functions.
     // Only the publishable key crosses this Cloudflare Worker boundary.
     const response = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/functions/v1/place-order`, {
