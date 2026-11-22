@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { pages, faqs } from "@/data/pages";
 import { siteConfig } from "@/lib/site-config";
-import { useI18n } from "@/lib/i18n";
 
 type SectionKey = "store" | "home" | "footer" | "pages" | "faq";
 const sectionMeta: Record<SectionKey, { title: string; description: string; icon: typeof Store }> = {
@@ -32,7 +31,6 @@ const defaults: Record<SectionKey, unknown> = {
 const helpText = "ساختار را به صورت JSON نگه دارید. متن‌های فارسی و انگلیسی هر دو قابل ویرایش‌اند. پیش از ذخیره، ساختار JSON بررسی می‌شود.";
 
 export function AdminContentPage({ onBack }: { onBack?: () => void }) {
-  useI18n();
   const [section, setSection] = useState<SectionKey>("store");
   const [values, setValues] = useState<Record<SectionKey, unknown>>(defaults);
   const [draft, setDraft] = useState("");
