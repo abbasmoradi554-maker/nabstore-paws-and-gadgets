@@ -63,12 +63,16 @@ export const saveAdminProduct = createServerFn({ method: "POST" })
     return { product: row };
   });
 
-export const deleteAdminProduct = createServerFn({ method: "POST" })
+export const archiveAdminProduct = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => z.object({ accessToken: token, id: z.string().regex(/^[a-z0-9-]{2,60}$/) }).parse(v))
   .handler(async ({ data }) => {
     const db = await admin(data.accessToken);
-    const { error } = await db.from("products").delete().eq("id", data.id);
-    if (error) throw new Error("product_delete_failed");
+    const { data: archived, error } = await db.from("products")
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .select("id")
+      .single();
+    if (error || !archived) throw new Error("product_archive_failed");
     return { success: true };
   });
 
