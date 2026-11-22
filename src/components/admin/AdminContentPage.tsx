@@ -49,7 +49,9 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
       for (const row of data ?? []) {
         if (row.key in next) {
           if (row.key === "pages" && (!row.value || Object.keys(row.value).length === 0)) continue;
-          next[row.key as SectionKey] = row.value && typeof row.value === "object" && !Array.isArray(row.value)\n            ? { ...(defaults[row.key as SectionKey] as Record<string, unknown>), ...(row.value as Record<string, unknown>) }\n            : row.value ?? defaults[row.key as SectionKey];
+          next[row.key as SectionKey] = row.value && typeof row.value === "object" && !Array.isArray(row.value)
+            ? { ...(defaults[row.key as SectionKey] as Record<string, unknown>), ...(row.value as Record<string, unknown>) }
+            : row.value ?? defaults[row.key as SectionKey];
         }
       }
       setValues(next);
