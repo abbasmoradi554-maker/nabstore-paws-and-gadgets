@@ -4,13 +4,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { pages, faqs } from "@/data/pages";
+import { categories } from "@/data/products";
 import { siteConfig } from "@/lib/site-config";
 
-type SectionKey = "store" | "home" | "footer" | "pages" | "faq";
+type SectionKey = "store" | "home" | "footer" | "categories" | "pages" | "faq";
 const sectionMeta: Record<SectionKey, { title: string; description: string; icon: typeof Store }> = {
   store: { title: "اطلاعات فروشگاه", description: "شماره تماس، ایمیل، نشانی و شبکه‌های اجتماعی", icon: Store },
   home: { title: "صفحه اصلی", description: "تیترها، متن‌ها و پیام بالای سایت", icon: Home },
   footer: { title: "پاورقی سایت", description: "معرفی کوتاه و متن حقوقی پایین سایت", icon: PanelsTopLeft },
+  categories: { title: "دسته‌بندی‌ها", description: "عنوان، توضیحات، تصویر و زیر‌دسته‌ها؛ شناسه‌ها را ثابت نگه دارید", icon: PanelsTopLeft },
   pages: { title: "صفحات و قوانین", description: "درباره ما، ارسال، مرجوعی، حریم خصوصی و قوانین", icon: FileText },
   faq: { title: "پرسش‌های متداول", description: "سؤال‌ها و پاسخ‌های قابل نمایش در سایت", icon: MessageCircle },
 };
@@ -26,7 +28,7 @@ const defaults: Record<SectionKey, unknown> = {
     announcement: { fa: "محصولات نمونه‌اند — قیمت و موجودی نهایی پس از ثبت سفارش توسط پشتیبانی با شما هماهنگ می‌شود.", en: "Sample products — support confirms final price and availability after ordering." },
   },
   footer: { about: { fa: "ناب استور؛ فروشگاه آنلاین قاب و لوازم جانبی گوشی، محصولات گربه و سگ و گجت‌های ترند.", en: "NABSTORE — an online store for phone accessories, cat & dog products and trending gadgets." }, followUs: { fa: "ما را دنبال کنید", en: "Follow us" }, rights: { fa: "تمامی حقوق برای ناب استور محفوظ است.", en: "All rights reserved." } },
-  pages, faq: faqs,
+  categories, pages, faq: faqs,
 };
 const helpText = "ساختار را به صورت JSON نگه دارید. متن‌های فارسی و انگلیسی هر دو قابل ویرایش‌اند. پیش از ذخیره، ساختار JSON بررسی می‌شود.";
 
@@ -47,7 +49,7 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
       for (const row of data ?? []) {
         if (row.key in next) {
           if (row.key === "pages" && (!row.value || Object.keys(row.value).length === 0)) continue;
-          next[row.key as SectionKey] = row.value ?? defaults[row.key as SectionKey];
+          next[row.key as SectionKey] = row.value && typeof row.value === "object" && !Array.isArray(row.value)\n            ? { ...(defaults[row.key as SectionKey] as Record<string, unknown>), ...(row.value as Record<string, unknown>) }\n            : row.value ?? defaults[row.key as SectionKey];
         }
       }
       setValues(next);
