@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { categories } from "@/data/products";
 import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
+import { useStoreContent } from "@/lib/store-content";
 import { comingSoon } from "./coming-soon";
 import { Logo } from "./Logo";
 
@@ -46,6 +47,9 @@ function LangSwitch() {
 
 export function Header() {
   const { t, l, num } = useI18n();
+  const content = useStoreContent();
+  const announcement = content.data?.home?.announcement;
+  const announcementText = announcement && typeof announcement === "object" ? l(announcement) : t("previewNotice");
   const cart = useCart();
   const [open, setOpen] = useState(false);
 
@@ -65,7 +69,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40">
       <div className="bg-ink text-ink-foreground">
-        <p className="container-page py-2 text-center text-[0.72rem] leading-relaxed sm:text-xs">{t("previewNotice")}</p>
+        <p className="container-page py-2 text-center text-[0.72rem] leading-relaxed sm:text-xs">{announcementText}</p>
       </div>
 
       <div className="border-b bg-background/90 backdrop-blur-xl">
