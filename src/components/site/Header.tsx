@@ -3,7 +3,6 @@ import { Globe, Heart, Menu, Search, ShoppingBag, UserRound } from "lucide-react
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { categories } from "@/data/products";
 import { useCart } from "@/lib/cart";
