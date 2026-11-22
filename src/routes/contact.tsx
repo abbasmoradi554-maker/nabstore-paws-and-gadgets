@@ -3,7 +3,7 @@ import { Instagram, Mail, MapPin, Phone, Send } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
 import { useStoreContent } from "@/lib/store-content";
-import { instagramUrl, isSet, siteConfig, telegramUrl } from "@/lib/site-config";
+import { isSet, siteConfig } from "@/lib/site-config";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
