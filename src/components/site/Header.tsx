@@ -3,6 +3,7 @@ import { Globe, Heart, Menu, Search, ShoppingBag, UserRound } from "lucide-react
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { categories } from "@/data/products";
 import { useCart } from "@/lib/cart";
@@ -137,9 +138,7 @@ export function Header() {
             <div className="hidden sm:block">
               <LangSwitch />
             </div>
-            <Button variant="ghost" size="icon-lg" aria-label={t("account")} onClick={() => comingSoon(t("comingSoon"))}>
-              <UserRound className="size-5" />
-            </Button>
+            <Button asChild variant="ghost" size="icon-lg" aria-label={t("account")}><Link to="/account"><UserRound className="size-5" /></Link></Button>
             <Button
               variant="ghost"
               size="icon-lg"
