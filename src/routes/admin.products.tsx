@@ -109,7 +109,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       // Never block the whole products workspace on session restoration or catalog I/O.
       window.setTimeout(() => {
         if (!live) return;
-        void load().catch((error) => {
+        void load(token).catch((error) => {
           console.error("Admin products initial load failed", error);
           if (live) toast.error("ورود انجام شد، اما دریافت محصولات ناموفق بود؛ از تازه‌سازی استفاده کنید.");
         });
@@ -171,7 +171,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       if (error || !data.session) throw error ?? new Error("login_failed");
       setAccessToken(data.session.access_token);
       restoredToken.current = data.session.access_token;
-      void load().catch((error) => {
+      void load(data.session.access_token).catch((error) => {
         console.error("Admin products login load failed", error);
         toast.error("ورود انجام شد، اما دریافت فهرست محصولات ناموفق بود؛ از تازه‌سازی استفاده کنید.");
       });
