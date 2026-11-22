@@ -45,7 +45,10 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
       if (error) throw error;
       const next = { ...defaults } as Record<SectionKey, unknown>;
       for (const row of data ?? []) {
-        if (row.key in next) {\n          if (row.key === "pages" && (!row.value || Object.keys(row.value).length === 0)) continue;\n          next[row.key as SectionKey] = row.value ?? defaults[row.key as SectionKey];\n        }
+        if (row.key in next) {
+          if (row.key === "pages" && (!row.value || Object.keys(row.value).length === 0)) continue;
+          next[row.key as SectionKey] = row.value ?? defaults[row.key as SectionKey];
+        }
       }
       setValues(next);
       setHasSaved(Object.fromEntries((data ?? []).map((row) => [row.key, true])));
