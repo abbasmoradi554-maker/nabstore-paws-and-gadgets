@@ -341,7 +341,7 @@ function AdminPage() {
       const from = orders.length;
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, status, created_at")
+        .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman, status, created_at")
         .order("created_at", { ascending: false })
         .range(from, from + 49)
         .abortSignal(AbortSignal.timeout(10000));
