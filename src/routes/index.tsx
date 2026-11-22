@@ -178,11 +178,13 @@ function ValueStrip() {
 
 function CategoriesSection() {
   const { t } = useI18n();
+  const content = useStoreContent();
+  const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={t("catTitle")} subtitle={t("catSubtitle")} link={{ to: "/shop" }} />
       <div className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-4 sm:gap-x-4 lg:grid-cols-7">
-        {categories.map((c) => (
+        {visibleCategories.map((c: (typeof categories)[number]) => (
           <CategoryCard key={c.slug} category={c} />
         ))}
       </div>
@@ -193,7 +195,9 @@ function CategoriesSection() {
 function PhoneSection() {
   const { l } = useI18n();
   const catalog = useCatalogProducts();
-  const cat = categories[0];
+  const content = useStoreContent();
+  const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
+  const cat = visibleCategories[0] as (typeof categories)[number] | undefined;
   if (!cat) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
