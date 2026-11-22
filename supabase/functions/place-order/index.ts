@@ -264,9 +264,9 @@ Deno.serve(async (request: Request) => {
 
   try {
     const length = Number(request.headers.get("content-length") ?? "0");
-    if (length > 64 * 1024) return json({ error: "request_too_large" }, 413);
+    if (length > 64 * 1024) return json({ error: "request_too_large" }, request, 413);
     const body = await request.json();
-    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_request" }, 400);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_request" }, request, 400);
     const result = await createOrder(body as Record<string, unknown>, userId);
     return json(result, request);
   } catch (error) {
@@ -277,7 +277,7 @@ Deno.serve(async (request: Request) => {
     if (["invalid_customer", "invalid_items", "invalid_option", "invalid_catalog_product", "spam_detected"].includes(message)) {
       return json({ error: message === "spam_detected" ? "invalid_request" : message }, request, 400);
     }
-    if (message === "server_configuration_missing") {
+    if (message === "server_configuration_missing" || message === "shipping_configuration_missing") {
       console.error("place-order server configuration is incomplete");
       return json({ error: "service_unavailable" }, request, 503);
     }
