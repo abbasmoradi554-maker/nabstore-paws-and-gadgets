@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { siteUrl } from "@/lib/site-config";
 
 import { InfoPage } from "@/components/site/InfoPage";
 import { pages } from "@/data/pages";
@@ -11,10 +12,10 @@ export const Route = createFileRoute("/privacy")({
       { property: "og:title", content: "حریم خصوصی | ناب استور" },
       { property: "og:description", content: "نحوه استفاده ناب استور از اطلاعات ثبت سفارش شما." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://nabstore-paws-and-gadgets.lovable.app/privacy" },
+      { property: "og:url", content: `${siteUrl}/privacy` },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://nabstore-paws-and-gadgets.lovable.app/privacy" }],
+    links: [{ rel: "canonical", href: `${siteUrl}/privacy` }],
   }),
   component: () => <InfoPage page={pages.privacy} />,
 });
