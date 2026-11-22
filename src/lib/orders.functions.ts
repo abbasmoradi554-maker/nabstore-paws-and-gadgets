@@ -19,15 +19,16 @@ export const placeOrder = createServerFn({ method: "POST" })
       headers: {
         apikey: publishableKey,
         "Content-Type": "application/json",
+        ...(data.accessToken ? { Authorization: `Bearer ${data.accessToken}` } : {}),
       },
       body: JSON.stringify(data),
     });
 
     const result = await response.json().catch(() => null) as
-      | { code: string; lines: Array<{ id: string; nameFa: string; qty: number; options: Record<string, string>; unitPrice: number; lineTotal: number }>; total: number; error?: string }
+      | { code: string; lines: Array<{ id: string; nameFa: string; qty: number; options: Record<string, string>; unitPrice: number; lineTotal: number }>; subtotal: number; shippingToman: number; total: number; error?: string }
       | null;
 
-    if (!response.ok || !result || !result.code || !Array.isArray(result.lines) || typeof result.total !== "number") {
+    if (!response.ok || !result || !result.code || !Array.isArray(result.lines) || typeof result.total !== "number" || typeof result.shippingToman !== "number") {
       const reason = result?.error;
       if (reason === "rate_limited") throw new Error("rate_limited");
       if (reason === "product_not_available") throw new Error("invalid_items");
