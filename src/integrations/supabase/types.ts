@@ -147,8 +147,8 @@ export type Database = {
         }
         Returns: Json
       }
-      claim_order_for_customer: {
-        Args: { p_order_code: string; p_mobile: string }
+      record_order_claim_attempt: {
+        Args: { p_user_id: string }
         Returns: boolean
       }
     }
