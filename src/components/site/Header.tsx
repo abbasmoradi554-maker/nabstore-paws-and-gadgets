@@ -50,6 +50,7 @@ export function Header() {
   const content = useStoreContent();
   const announcement = content.data?.home?.announcement;
   const announcementText = announcement && typeof announcement === "object" ? l(announcement) : t("previewNotice");
+  const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
   const cart = useCart();
   const [open, setOpen] = useState(false);
 
@@ -100,7 +101,7 @@ export function Header() {
                   </Link>
                 ))}
                 <p className="mt-4 px-3 text-xs font-semibold uppercase text-muted-foreground">{t("categories")}</p>
-                {categories.map((c) => (
+                {visibleCategories.map((c: (typeof categories)[number]) => (
                   <Link
                     key={c.slug}
                     to="/category/$slug"
