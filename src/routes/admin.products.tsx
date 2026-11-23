@@ -232,8 +232,8 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       toast.error("فرمت تصویر باید JPG، PNG، WEBP یا AVIF باشد.");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("حجم هر تصویر نباید بیشتر از ۸ مگابایت باشد.");
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("حجم هر تصویر نباید بیشتر از ۴ مگابایت باشد.");
       return;
     }
     if (!accessToken) return;
