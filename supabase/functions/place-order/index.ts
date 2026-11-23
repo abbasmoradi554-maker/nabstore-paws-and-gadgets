@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const allowedOrigins = new Set([
   "https://feature-store-admin-cms-nabstore-paws-and-gadgets.abbasmoradi554.workers.dev",
-  "https://nabstore-paws-and-gadgets.nabstore.workers.dev",
+  "https://nabstore-paws-and-gadgets.abbasmoradi554.workers.dev",
 ]);
 function corsHeadersFor(request: Request) {
   const origin = request.headers.get("Origin") ?? "";
