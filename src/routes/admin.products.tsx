@@ -284,6 +284,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
     try {
       await withTimeout(archiveAdminProduct({ data: { accessToken, id } }), 15000, "product_archive_timeout");
       await load(accessToken);
+      await queryClient.invalidateQueries({ queryKey: ["public-catalog"] });
       if (draft.id === id) clearForm();
       toast.success("محصول بایگانی شد؛ اطلاعات آن حفظ شده است.");
     } catch {
