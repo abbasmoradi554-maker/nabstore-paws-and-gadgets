@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2, Eye, EyeOff, ImagePlus, LoaderCircle, LogOut, Package,
@@ -67,6 +68,7 @@ function LegacyProductsAdminRedirect() {
 }
 
 export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accessToken, setAccessToken] = useState("");
@@ -206,6 +208,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
         },
       }), 15000, "product_save_timeout");
       await load();
+      await queryClient.invalidateQueries({ queryKey: ["public-catalog"] });
       clearForm();
       toast.success("محصول با موفقیت ذخیره شد");
     } catch (error) {
@@ -223,8 +226,8 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
     event.target.value = "";
     if (!file) return;
     const currentImages = imagesText.split(/[\n,]/).map((value) => value.trim()).filter(Boolean);
-    if (currentImages.length >= 8) {
-      toast.error("حداکثر ۸ تصویر برای هر محصول مجاز است.");
+    if (!draft.id && currentImages.length >= 8) {
+      toast.error("حداکثر ۸ تصویر برای هر محصول جدید مجاز است.");
       return;
     }
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
@@ -248,8 +251,15 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
       }), 25000, "image_upload_timeout");
       if (error) throw error;
       const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(path);
-      setImagesText((current) => [...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), publicData.publicUrl].slice(0, 8).join("\n"));
-      toast.success("تصویر با موفقیت بارگذاری شد.");
+      setImagesText((current) => {
+        const existing = current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean);
+        // Replace the primary image when editing: the storefront renders images[0].
+        const next = draft.id && existing.length > 0
+          ? [publicData.publicUrl, ...existing.slice(1)]
+          : [...existing, publicData.publicUrl];
+        return next.slice(0, 8).join("\n");
+      });
+      toast.success(draft.id ? "تصویر اصلی محصول جایگزین شد؛ برای ثبت نهایی ذخیره تغییرات را بزنید." : "تصویر با موفقیت بارگذاری شد.");
     } catch (error) {
       console.error("Admin product image upload failed", error);
       const message = error instanceof Error ? error.message : "";
