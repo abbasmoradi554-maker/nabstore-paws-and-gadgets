@@ -41,9 +41,10 @@ function CustomerAccount() {
   const [mobile, setMobile] = useState("");
   const [showClaim, setShowClaim] = useState(false);
 
-  const loadOrders = async () => {
+  const loadOrders = async (userId: string) => {
     const request = supabase.from("orders")
       .select("id,order_code,customer_name,mobile,city,province,total_toman,shipping_toman,status,created_at,items")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false }).limit(50)
       .abortSignal(AbortSignal.timeout(8000));
     const { data, error } = await withTimeout(request, 9000, "customer_orders_timeout");
@@ -66,7 +67,7 @@ function CustomerAccount() {
       setLoading(false);
       window.clearTimeout(fallback);
       if (data.session) {
-        void loadOrders().catch((loadError) => {
+        void loadOrders(data.session.user.id).catch((loadError) => {
           console.error("Customer order history failed", loadError);
           if (active) toast.error("دریافت سفارش‌ها طول کشید؛ می‌توانید بعداً دوباره تلاش کنید.");
         });
@@ -83,7 +84,7 @@ function CustomerAccount() {
       setSession(nextSession);
       if (nextSession) {
         window.setTimeout(() => {
-          if (active) void loadOrders().catch((error) => {
+          if (active) void loadOrders(nextSession.user.id).catch((error) => {
             console.error("Customer order history refresh failed", error);
             if (active) toast.error("دریافت سفارش‌ها انجام نشد؛ دوباره تلاش کنید.");
           });
@@ -114,7 +115,7 @@ function CustomerAccount() {
         );
         if (error) throw error;
         setSession(data.session);
-        void loadOrders().catch((loadError) => {
+        void loadOrders(data.session.user.id).catch((loadError) => {
           console.error("Customer orders after login failed", loadError);
           toast.error("ورود موفق بود؛ دریافت سفارش‌ها کمی طول کشید و می‌توانید دوباره تلاش کنید.");
         });
@@ -156,7 +157,7 @@ function CustomerAccount() {
       });
       if (error) throw error;
       if (!data?.claimed) throw new Error("order_not_found");
-      await loadOrders();
+      await loadOrders(session!.user.id);
       setOrderCode(""); setMobile(""); setShowClaim(false);
       toast.success("سفارش قبلی به حساب شما اضافه شد.");
     } catch (error) {
@@ -185,7 +186,7 @@ function CustomerAccount() {
             <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
           <label className="grid gap-2 text-sm font-medium">رمز عبور (ثبت‌نام: حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد)
-            <input type="password" required minLength={12} autoComplete={mode==="login"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
+            <input type="password" required minLength={mode==="signup" ? 12 : 8} autoComplete={mode==="login"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
           <Button type="submit" disabled={busy} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
           <button type="button" className="text-sm text-primary underline" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
