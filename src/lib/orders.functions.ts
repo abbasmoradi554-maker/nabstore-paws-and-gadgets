@@ -4,8 +4,8 @@ import { orderInputSchema } from "./order-schema";
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"];
+    const publishableKey = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
 
     if (!supabaseUrl || !publishableKey) {
       console.error("[placeOrder] Supabase public configuration is missing at build time");
