@@ -26,8 +26,9 @@ function mapProduct(row:Row):Product {
   const category = categories.some(c=>c.slug===row.category) ? row.category as CategorySlug : "gadgets";
   const allowedOptions:OptionType[]=["model","color","size","design"];
   return {
-    id:row.id,name:row.name,price:Number(row.price),oldPrice:row.old_price==null?undefined:Number(row.old_price),
-    category,subcategory:row.subcategory??undefined,short:row.short,description:row.description,
+    id:row.id,name:row.name,price:Number(row.price),
+    ...(row.old_price == null ? {} : { oldPrice: Number(row.old_price) }),
+    category,...(row.subcategory == null ? {} : { subcategory: row.subcategory }),short:row.short,description:row.description,
     specs:Array.isArray(row.specs)?row.specs:[],
     options:Array.isArray(row.options)?row.options.filter(o=>allowedOptions.includes(o.type as OptionType)).map(o=>({type:o.type as OptionType,values:Array.isArray(o.values)?o.values:[]})):[],
     images:Array.isArray(row.images)&&row.images.length?row.images:["/favicon.svg"],
@@ -38,7 +39,7 @@ function mapProduct(row:Row):Product {
 export function useCatalogProducts() {
   return useQuery({
     queryKey:["public-catalog"],
-    queryFn:async()=>{const result=await listActiveProducts();return (result.products as Row[]).filter(row=>row.stock_quantity===null||row.stock_quantity>0).map(mapProduct);},
+    queryFn:async()=>{const result=await listActiveProducts();return (result.products as unknown as Row[]).filter(row=>row.stock_quantity===null||row.stock_quantity>0).map(mapProduct);},
     staleTime:30_000,
   });
 }
