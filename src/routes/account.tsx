@@ -33,9 +33,10 @@ function CustomerAccount() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<"login"|"signup">("login");
+  const [mode, setMode] = useState<"login"|"signup"|"recover"|"reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderCode, setOrderCode] = useState("");
   const [mobile, setMobile] = useState("");
@@ -79,8 +80,9 @@ function CustomerAccount() {
       window.clearTimeout(fallback);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      if (event === "PASSWORD_RECOVERY") setMode("reset");
       setSession(nextSession);
       if (nextSession) {
         window.setTimeout(() => {
@@ -147,6 +149,43 @@ function CustomerAccount() {
     } finally { setBusy(false); }
   };
 
+  const requestPasswordReset = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/account` }),
+        15000,
+        "customer_recovery_timeout",
+      );
+      if (error) throw error;
+      toast.success("اگر این ایمیل حساب فعالی داشته باشد، لینک بازیابی برای آن ارسال می‌شود.");
+      setMode("login");
+    } catch (error) {
+      console.error("Customer password recovery failed", error);
+      toast.error("ارسال لینک بازیابی انجام نشد؛ کمی بعد دوباره تلاش کنید.");
+    } finally { setBusy(false); }
+  };
+
+  const updatePassword = async (event: FormEvent) => {
+    event.preventDefault();
+    if (password.length < 12 || !(/\\p{Ll}/u.test(password) && /\\p{Lu}/u.test(password) && /\\d/.test(password) && /[^\\p{L}\\d]/u.test(password))) {
+      toast.error("رمز جدید باید حداقل ۱۲ کاراکتر و شامل حروف کوچک و بزرگ، عدد و نماد باشد.");
+      return;
+    }
+    if (password !== confirmPassword) { toast.error("تکرار رمز عبور با رمز جدید مطابقت ندارد."); return; }
+    setBusy(true);
+    try {
+      const { error } = await withTimeout(supabase.auth.updateUser({ password }), 15000, "customer_password_update_timeout");
+      if (error) throw error;
+      setPassword(""); setConfirmPassword(""); setMode("login");
+      toast.success("رمز عبور با موفقیت تغییر کرد.");
+    } catch (error) {
+      console.error("Customer password update failed", error);
+      toast.error("تغییر رمز انجام نشد؛ لینک بازیابی ممکن است منقضی شده باشد.");
+    } finally { setBusy(false); }
+  };
+
   const claimOrder = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -179,7 +218,27 @@ function CustomerAccount() {
         <div className="rounded-2xl bg-primary-soft p-3 text-primary"><UserRound className="size-6" /></div>
         <div><h1 className="text-2xl font-bold">حساب مشتری ناب استور</h1><p className="mt-1 text-sm text-muted-foreground">مشاهده سفارش‌های قبلی و پیگیری وضعیت خریدها</p></div>
       </div>
-      {!session ? (
+      {mode === "reset" ? (
+        <form onSubmit={updatePassword} className="mx-auto grid max-w-lg gap-4 rounded-3xl border bg-card p-6 sm:p-8">
+          <h2 className="text-lg font-bold">تنظیم رمز عبور جدید</h2>
+          <label className="grid gap-2 text-sm font-medium">رمز جدید
+            <input type="password" required minLength={12} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
+          </label>
+          <label className="grid gap-2 text-sm font-medium">تکرار رمز جدید
+            <input type="password" required minLength={12} autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
+          </label>
+          <Button type="submit" disabled={busy} className="w-full">{busy ? "لطفاً صبر کنید…" : "ذخیره رمز جدید"}</Button>
+        </form>
+      ) : mode === "recover" ? (
+        <form onSubmit={requestPasswordReset} className="mx-auto grid max-w-lg gap-4 rounded-3xl border bg-card p-6 sm:p-8">
+          <h2 className="text-lg font-bold">بازیابی رمز عبور</h2>
+          <label className="grid gap-2 text-sm font-medium">ایمیل حساب
+            <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
+          </label>
+          <Button type="submit" disabled={busy} className="w-full">{busy ? "در حال ارسال…" : "ارسال لینک بازیابی"}</Button>
+          <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("login")}>بازگشت به ورود</button>
+        </form>
+      ) : !session ? (
         <form onSubmit={authenticate} className="mx-auto grid max-w-lg gap-4 rounded-3xl border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-bold">{mode === "login" ? "ورود به حساب" : "ساخت حساب مشتری"}</h2>
           <label className="grid gap-2 text-sm font-medium">ایمیل
@@ -189,6 +248,7 @@ function CustomerAccount() {
             <input type="password" required minLength={mode==="signup" ? 12 : 8} autoComplete={mode==="login"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
           <Button type="submit" disabled={busy} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
+          {mode === "login" && <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("recover")}>رمز عبور را فراموش کرده‌اید؟</button>}
           <button type="button" className="text-sm text-primary underline" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
           <p className="text-xs leading-6 text-muted-foreground">برای فعال‌سازی حساب ممکن است لازم باشد ایمیل خود را تأیید کنید. در ثبت‌نام رمز قوی با حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد انتخاب کنید. رمز عبور شما در ناب استور ذخیره یا قابل مشاهده نیست؛ مدیریت آن بر عهده سرویس امن Supabase Auth است.</p>
         </form>
