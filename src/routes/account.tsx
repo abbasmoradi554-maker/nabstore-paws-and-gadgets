@@ -94,7 +94,7 @@ function CustomerAccount() {
   const authenticate = async (event?: FormEvent) => {
     event?.preventDefault();
     const normalizedEmail = email.trim();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setFeedback("لطفاً یک ایمیل معتبر وارد کنید.");
       toast.error("ایمیل واردشده معتبر نیست.");
       return;
