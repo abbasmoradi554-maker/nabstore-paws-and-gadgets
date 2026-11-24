@@ -132,7 +132,7 @@ function CustomerAccount() {
         if (error) throw error;
         if (data.session) {
           setSession(data.session);
-          void loadOrders().catch((loadError) => {
+          void loadOrders(data.session.user.id).catch((loadError) => {
             console.error("Customer orders after signup failed", loadError);
             toast.error("حساب ساخته شد؛ دریافت سفارش‌ها کمی طول کشید.");
           });
