@@ -55,10 +55,28 @@ function CustomerAccount() {
 
   useEffect(() => {
     let active = true;
-    // Show the account UI immediately; never block the customer on session restoration.
-    // If a saved session exists, it replaces the login form as soon as auth resolves.
-    void supabase.auth.getSession().then(({ data, error }) => {
+    // Subscribe before restoring the stored session. Otherwise a slow getSession()
+    // can resolve with null AFTER signInWithPassword succeeds and overwrite the
+    // newly authenticated React state, leaving the customer on the login form.
+    let authEventObserved = false;
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      authEventObserved = true;
+      if (event === "PASSWORD_RECOVERY") setMode("reset");
+      setSession(nextSession);
+      if (nextSession) {
+        window.setTimeout(() => {
+          if (active) void loadOrders(nextSession.user.id).catch((error) => {
+            console.error("Customer order history refresh failed", error);
+            if (active) toast.error("دریافت سفارش‌ها انجام نشد؛ دوباره تلاش کنید.");
+          });
+        }, 0);
+      } else setOrders([]);
+    });
+
+    // Restore an existing session only if no newer auth event has arrived.
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!active || authEventObserved) return;
       if (error) console.error("Customer session restore failed", error);
       setSession(data.session);
       if (data.session) {
@@ -72,19 +90,6 @@ function CustomerAccount() {
       console.error("Customer session restore failed", error);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!active) return;
-      if (event === "PASSWORD_RECOVERY") setMode("reset");
-      setSession(nextSession);
-      if (nextSession) {
-        window.setTimeout(() => {
-          if (active) void loadOrders(nextSession.user.id).catch((error) => {
-            console.error("Customer order history refresh failed", error);
-            if (active) toast.error("دریافت سفارش‌ها انجام نشد؛ دوباره تلاش کنید.");
-          });
-        }, 0);
-      } else setOrders([]);
-    });
     return () => {
       active = false;
       listener.subscription.unsubscribe();
