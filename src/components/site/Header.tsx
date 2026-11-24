@@ -28,7 +28,9 @@ function SearchBox({ className }: { className?: string }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t("searchPlaceholder")}
-          className="h-11 w-full rounded-xl border border-transparent bg-secondary ps-11 pe-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-card"
+          maxLength={100}
+          aria-label={t("search")}
+          className="h-11 w-full" rounded-xl border border-transparent bg-secondary ps-11 pe-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-card"
         />
       </label>
     </form>
