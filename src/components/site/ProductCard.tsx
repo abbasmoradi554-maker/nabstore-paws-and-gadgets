@@ -48,6 +48,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
       </Link>
       <Button
         type="button"
+        disabled={!wishlist.ready}
         size="icon"
         variant="secondary"
         aria-label={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
