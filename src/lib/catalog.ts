@@ -9,7 +9,7 @@ type Row = {
   images:string[]; tags:string[]; added_order:number; stock_quantity:number|null;
 };
 
-/** Keep owned Supabase Storage originals untouched; use the image CDN only for remaining third-party sources. */
+/** Keep originals in owned storage; deliver responsive, resized WebP variants through the image CDN. */
 export function optimizedProductImage(url: string, width = 480): string {
   if (!url || url.startsWith("/") || url.startsWith("data:")) return url;
   try {
