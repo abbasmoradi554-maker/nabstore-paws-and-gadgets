@@ -9,13 +9,13 @@ type Row = {
   images:string[]; tags:string[]; added_order:number; stock_quantity:number|null;
 };
 
-/** Serve third-party product photos through a free image CDN, resized and converted to WebP. */
+/** Keep owned Supabase Storage originals untouched; use the image CDN only for remaining third-party sources. */
 export function optimizedProductImage(url: string, width = 480): string {
   if (!url || url.startsWith("/") || url.startsWith("data:")) return url;
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return url;
-    if (parsed.hostname === "images.weserv.nl") return url;
+    if (parsed.hostname === "images.weserv.nl" || parsed.hostname.endsWith(".supabase.co")) return url;
     return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}&w=${width}&h=${width}&fit=contain&output=webp&q=72`;
   } catch {
     return url;
