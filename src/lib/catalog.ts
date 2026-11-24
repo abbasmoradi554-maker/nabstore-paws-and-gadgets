@@ -43,7 +43,7 @@ export function useCatalogProducts() {
     staleTime:30_000,
   });
 }
-export function filterCatalogProducts(products:Product[],opts:{q?:string;cat?:string;sub?:string;sale?:boolean;min?:number;max?:number;sort?:string}) {
+export function filterCatalogProducts(products:Product[],opts:{q?:string|undefined;cat?:string|undefined;sub?:string|undefined;sale?:boolean|undefined;min?:number|undefined;max?:number|undefined;sort?:string|undefined}) {
   const q=opts.q?.trim().toLowerCase();
   const list=products.filter(p=>{
     if(opts.cat&&p.category!==opts.cat)return false;
