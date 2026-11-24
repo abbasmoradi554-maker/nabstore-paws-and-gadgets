@@ -57,20 +57,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const toggle = useCallback((id: string) => {
-    setIds((current) => {
-      const next = toggleWishlistId(current, id);
-      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
-      return next;
-    });
-  }, []);
-  const remove = useCallback((id: string) => {
-    setIds((current) => {
-      const next = current.filter((item) => item !== id);
-      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
-      return next;
-    });
-  }, []);
+  const toggle = useCallback((id: string) => commit(toggleWishlistId(ids, id)), [ids, commit]);
+  const remove = useCallback((id: string) => commit(ids.filter((item) => item !== id)), [ids, commit]);
   const clear = useCallback(() => commit([]), [commit]);
   const has = useCallback((id: string) => ids.includes(id), [ids]);
 
