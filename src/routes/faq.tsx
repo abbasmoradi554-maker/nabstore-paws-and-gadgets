@@ -25,7 +25,7 @@ export const Route = createFileRoute("/faq")({
 function Faq() {
   const { t, l } = useI18n();
   const content = useStoreContent();
-  const questions = Array.isArray(content.data?.faq) && content.data.faq.every((item: any) => item?.q?.fa && item?.q?.en && item?.a?.fa && item?.a?.en) ? content.data.faq : faqs;
+  const questions = Array.isArray(content.data?.["faq"]) && content.data.faq.every((item: any) => item?.q?.fa && item?.q?.en && item?.a?.fa && item?.a?.en) ? content.data.faq : faqs;
   return (
     <section className="container-page max-w-3xl pt-10">
       <h1 className="text-3xl font-bold">{t("faq")}</h1>
