@@ -163,10 +163,25 @@ function Hero() {
 }
 
 function ValueStrip() {
-  const { t } = useI18n();
+  const { t, l, price } = useI18n();
   const h = useHomeText();
+  const content = useStoreContent();
+  const shipping = content.data?.["shipping"];
+  const fee = Number(shipping?.flatFeeToman);
+  const freeAbove = Number(shipping?.freeAboveToman);
+  const hasShippingConfig = Number.isSafeInteger(fee) && fee >= 0 && Number.isSafeInteger(freeAbove) && freeAbove >= 0;
+  const shippingText = !hasShippingConfig
+    ? h("valueShippingText", t("valueShippingText"))
+    : shipping?.enabled === false || fee === 0
+      ? l({ fa: "ارسال سفارش‌ها رایگان است", en: "Shipping is free" })
+      : freeAbove > 0
+        ? l({
+            fa: `ارسال عادی ${price(fee)}؛ خرید ${price(freeAbove)} و بیشتر رایگان`,
+            en: `Standard shipping ${price(fee)}; free on orders of ${price(freeAbove)} or more`,
+          })
+        : l({ fa: `هزینه ارسال ${price(fee)} است`, en: `Shipping costs ${price(fee)}` });
   const items = [
-    { Icon: Truck, title: h("valueShipping", t("valueShipping")), text: h("valueShippingText", t("valueShippingText")) },
+    { Icon: Truck, title: h("valueShipping", t("valueShipping")), text: shippingText },
     { Icon: Package, title: h("valuePackaging", t("valuePackaging")), text: h("valuePackagingText", t("valuePackagingText")) },
     { Icon: Headset, title: h("valueSupport", t("valueSupport")), text: h("valueSupportText", t("valueSupportText")) },
     { Icon: RotateCcw, title: h("valueReturns", t("valueReturns")), text: h("valueReturnsText", t("valueReturnsText")) },
@@ -214,10 +229,13 @@ function PhoneSection() {
   const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data["categories"] : categories;
   const cat = visibleCategories[0] as (typeof categories)[number] | undefined;
   if (!cat) return null;
+  const products = (catalog.data ?? []).filter((p) => p.category === cat.slug).slice(0, 4);
+  // Do not render an empty category rail when the live catalog has no products in it.
+  if (!catalog.isLoading && products.length === 0) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={l(cat.name)} subtitle={l(cat.description)} link={{ to: "/category/$slug", params: { slug: cat.slug } }} />
-      <ProductRail products={(catalog.data ?? []).filter((p) => p.category === cat.slug).slice(0, 4)} />
+      <ProductRail products={products} />
     </section>
   );
 }
@@ -261,6 +279,9 @@ function OffersSection() {
   const { t } = useI18n();
   const h = useHomeText();
   const catalog = useCatalogProducts();
+  const discountedProducts = (catalog.data ?? []).filter((p) => p.oldPrice != null && p.oldPrice > p.price).slice(0, 4);
+  // Hide the promotions block until there are genuine discounted products to show.
+  if (!catalog.isLoading && discountedProducts.length === 0) return null;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <div className="grid gap-4 lg:grid-cols-5">
@@ -288,7 +309,7 @@ function OffersSection() {
           </Button>
         </div>
         <div className="lg:col-span-3">
-          <ProductGrid products={(catalog.data ?? []).filter((p) => p.oldPrice != null && p.oldPrice > p.price).slice(0, 4)} className="md:grid-cols-2 lg:grid-cols-2" />
+          <ProductGrid products={discountedProducts} className="md:grid-cols-2 lg:grid-cols-2" />
         </div>
       </div>
     </section>
