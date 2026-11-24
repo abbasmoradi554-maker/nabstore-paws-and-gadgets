@@ -193,6 +193,7 @@ function ProductDetail({ product, allProducts }: { product: Product; allProducts
             </Button>
             <Button
               type="button"
+              disabled={!wishlist.ready}
               size="icon-lg"
               variant="outline"
               aria-label={isSaved ? l({ fa: "حذف از علاقه‌مندی‌ها", en: "Remove from wishlist" }) : l({ fa: "افزودن به علاقه‌مندی‌ها", en: "Add to wishlist" })}
