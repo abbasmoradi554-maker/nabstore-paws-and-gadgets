@@ -40,7 +40,8 @@ export function useCatalogProducts() {
   return useQuery({
     queryKey:["public-catalog"],
     queryFn:async()=>{const result=await listActiveProducts();return (result.products as unknown as Row[]).filter(row=>row.stock_quantity===null||row.stock_quantity>0).map(mapProduct);},
-    staleTime:30_000,
+    // Keep public catalog data warm while customers move between storefront pages.
+    staleTime: 120_000,
   });
 }
 export function filterCatalogProducts(products:Product[],opts:{q?:string|undefined;cat?:string|undefined;sub?:string|undefined;sale?:boolean|undefined;min?:number|undefined;max?:number|undefined;sort?:string|undefined}) {
