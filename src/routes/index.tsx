@@ -124,7 +124,9 @@ function Hero() {
               alt=""
               width={1600}
               height={1008}
-              loading="lazy"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               className="absolute inset-0 -z-10 size-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent" />
