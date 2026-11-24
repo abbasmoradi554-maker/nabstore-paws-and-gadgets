@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Minus, Plus, ShoppingBag, Truck } from "lucide-react";
+import { Heart, Minus, Plus, ShoppingBag, Truck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { discountPercent, getCategory, hasDiscount, type OptionType, type Product } from "@/data/products";
 import { optimizedProductImage, useCatalogProducts } from "@/lib/catalog";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { siteUrl } from "@/lib/site-config";
@@ -68,6 +69,8 @@ function ProductDetail({ product, allProducts }: { product: Product; allProducts
   const category = getCategory(product.category);
   const { t, l, price, num } = useI18n();
   const cart = useCart();
+  const wishlist = useWishlist();
+  const isSaved = wishlist.has(product.id);
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<Record<string, string>>(() =>
@@ -187,6 +190,16 @@ function ProductDetail({ product, allProducts }: { product: Product; allProducts
             <Button size="xl" className="flex-1" onClick={addToCart}>
               <ShoppingBag />
               {t("addToCart")}
+            </Button>
+            <Button
+              type="button"
+              size="icon-lg"
+              variant="outline"
+              aria-label={isSaved ? l({ fa: "حذف از علاقه‌مندی‌ها", en: "Remove from wishlist" }) : l({ fa: "افزودن به علاقه‌مندی‌ها", en: "Add to wishlist" })}
+              aria-pressed={isSaved}
+              onClick={() => wishlist.toggle(product.id)}
+            >
+              <Heart className={isSaved ? "fill-rose-500 text-rose-500" : ""} />
             </Button>
           </div>
 
