@@ -3,7 +3,6 @@ import { siteUrl } from "@/lib/site-config";
 
 import { InfoPage } from "@/components/site/InfoPage";
 import { pages } from "@/data/pages";
-import { useI18n } from "@/lib/i18n";
 import { useStoreContent } from "@/lib/store-content";
 
 export const Route = createFileRoute("/shipping")({
@@ -23,7 +22,6 @@ export const Route = createFileRoute("/shipping")({
 });
 
 function ShippingPage() {
-  const { l } = useI18n();
   const content = useStoreContent();
   const shipping = content.data?.["shipping"];
   const fee = Number(shipping?.flatFeeToman);
