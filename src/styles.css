@@ -221,19 +221,22 @@ html[dir="rtl"] {
 }
 
 
-/* Storefront typography: compact, readable hierarchy inspired by modern Iranian marketplaces. */
+/* Storefront typography: clear marketplace hierarchy, tuned for Persian readability. */
 @layer base {
   html {
-    font-size: 14px;
+    font-size: 16px;
     font-synthesis: none;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     font-family: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
-    font-size: 0.9375rem;
-    line-height: 1.8;
+    font-size: 0.875rem;
+    line-height: 1.85;
     font-weight: 400;
     letter-spacing: 0;
+    font-kerning: normal;
+    font-feature-settings: "ss01" 1, "kern" 1;
   }
 
   h1 {
@@ -265,15 +268,23 @@ html[dir="rtl"] {
   }
 
   small, .text-xs {
-    line-height: 1.7;
+    font-size: 0.75rem;
+    line-height: 1.75;
   }
 
   .text-muted-foreground {
     letter-spacing: 0;
   }
+
+  /* Keep prices and numeric data crisp and aligned across product cards and checkout. */
+  .tabular-nums, [data-price], .price {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @media (max-width: 640px) {
-  html { font-size: 13.5px; }
-  body { line-height: 1.75; }
+  html { font-size: 15px; }
+  body { font-size: 0.9rem; line-height: 1.8; }
+  h1 { font-size: clamp(1.4rem, 6vw, 1.65rem); }
+  h2 { font-size: 1.2rem; }
 }
