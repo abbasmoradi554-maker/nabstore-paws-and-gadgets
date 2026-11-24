@@ -91,11 +91,24 @@ function CustomerAccount() {
     };
   }, []);
 
-  const authenticate = async (event: FormEvent) => {
-    event.preventDefault();
-    if (password.length < (mode === "signup" ? 12 : 8)) { toast.error(mode === "signup" ? "رمز عبور باید حداقل ۱۲ کاراکتر باشد." : "رمز عبور کوتاه است."); return; }
+  const authenticate = async (event?: FormEvent) => {
+    event?.preventDefault();
+    const normalizedEmail = email.trim();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      setFeedback("لطفاً یک ایمیل معتبر وارد کنید.");
+      toast.error("ایمیل واردشده معتبر نیست.");
+      return;
+    }
+    if (password.length < (mode === "signup" ? 12 : 8)) {
+      const message = mode === "signup" ? "رمز عبور باید حداقل ۱۲ کاراکتر باشد." : "رمز عبور باید حداقل ۸ کاراکتر باشد.";
+      setFeedback(message);
+      toast.error(message);
+      return;
+    }
     if (mode === "signup" && !(/\p{Ll}/u.test(password) && /\p{Lu}/u.test(password) && /\d/.test(password) && /[^\p{L}\d]/u.test(password))) {
-      toast.error("برای امنیت، رمز ثبت‌نام باید شامل حروف کوچک و بزرگ، عدد و نماد باشد.");
+      const message = "برای امنیت، رمز ثبت‌نام باید شامل حروف کوچک و بزرگ، عدد و نماد باشد.";
+      setFeedback(message);
+      toast.error(message);
       return;
     }
     setBusy(true);
@@ -103,7 +116,7 @@ function CustomerAccount() {
     try {
       if (mode === "login") {
         const { data, error } = await withTimeout(
-          supabase.auth.signInWithPassword({ email: email.trim(), password }),
+          supabase.auth.signInWithPassword({ email: normalizedEmail, password }),
           15000,
           "customer_login_timeout",
         );
@@ -118,7 +131,7 @@ function CustomerAccount() {
       } else {
         const { data, error } = await withTimeout(
           supabase.auth.signUp({
-            email: email.trim(), password,
+            email: normalizedEmail, password,
             options: { emailRedirectTo: `${window.location.origin}/account` },
           }),
           15000,
@@ -233,7 +246,7 @@ function CustomerAccount() {
           <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("login")}>بازگشت به ورود</button>
         </form>
       ) : !session ? (
-        <form onSubmit={authenticate} className="mx-auto grid max-w-lg gap-4 rounded-3xl border bg-card p-6 sm:p-8">
+        <form noValidate onSubmit={authenticate} className="mx-auto grid max-w-lg gap-4 rounded-3xl border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-bold">{mode === "login" ? "ورود به حساب" : "ساخت حساب مشتری"}</h2>
           <label className="grid gap-2 text-sm font-medium">ایمیل
             <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
@@ -241,7 +254,7 @@ function CustomerAccount() {
           <label className="grid gap-2 text-sm font-medium">رمز عبور (ثبت‌نام: حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد)
             <input type="password" required minLength={mode==="signup" ? 12 : 8} autoComplete={mode==="login"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
-          <Button type="submit" disabled={busy} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
+          <Button type="button" disabled={busy} onClick={() => void authenticate()} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
           <p role="status" aria-live="polite" className="min-h-6 text-center text-sm text-muted-foreground">{feedback}</p>
           {mode === "login" && <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("recover")}>رمز عبور را فراموش کرده‌اید؟</button>}
           <button type="button" className="text-sm text-primary underline" onClick={()=>{setFeedback("");setMode(mode==="login"?"signup":"login");}}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
