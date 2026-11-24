@@ -7,9 +7,9 @@ export function InfoPage({ page }: { page: InfoPageData }) {
   const { l } = useI18n();
   const content = useStoreContent();
   const pageKey = Object.entries(defaultPages).find(([, value]) => value === page)?.[0];
-  const candidate = pageKey ? content.data?.pages?.[pageKey] : null;
+  const candidate = pageKey ? content.data?.["pages"]?.[pageKey] : null;
   const pageData = candidate?.title && candidate?.intro && Array.isArray(candidate?.sections) ? candidate : page;
-  const shipping = content.data?.shipping;
+  const shipping = content.data?.["shipping"];
   const shippingFee = Number.isSafeInteger(Number(shipping?.flatFeeToman)) ? Math.max(0, Number(shipping.flatFeeToman)) : 59000;
   const freeAbove = Number.isSafeInteger(Number(shipping?.freeAboveToman)) ? Math.max(0, Number(shipping.freeAboveToman)) : 2000000;
   const intro = pageKey === "shipping" ? { fa: "ارسال عادی ۵۹ هزار تومان است و برای سفارش‌های ۲ میلیون تومان و بیشتر رایگان خواهد بود. هزینه نهایی پیش از ثبت سفارش نمایش داده می‌شود.", en: "Standard shipping is 59,000 Toman and free for orders of 2,000,000 Toman or more. The final cost is shown before placing the order." } : pageData.intro;
