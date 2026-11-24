@@ -25,7 +25,7 @@ export const Route = createFileRoute("/contact")({
 function Contact() {
   const { t } = useI18n();
   const content = useStoreContent();
-  const store = content.data?.store ?? siteConfig;
+  const store = content.data?.["store"] ?? siteConfig;
   const instagram = typeof store.instagram === "string" ? store.instagram : "";
   const telegram = typeof store.telegram === "string" ? store.telegram : "";
   const instagramHref = instagram && !/^\\[.*\\]$/.test(instagram) ? (instagram.startsWith("http") ? instagram : `https://instagram.com/${instagram.replace(/^@/, "")}`) : "";
