@@ -170,7 +170,7 @@ async function createOrder(body: Record<string, unknown>, userId: string | null)
     if (!stableOrderCode) return null;
     const { data: existing, error } = await db
       .from("orders")
-      .select("order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman")
+      .select("order_code, user_id, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman")
       .eq("order_code", stableOrderCode)
       .maybeSingle();
     if (error) throw new Error("save_failed");
@@ -191,6 +191,30 @@ async function createOrder(body: Record<string, unknown>, userId: string | null)
       existing.postal_code === customer.postalCode &&
       (existing.notes ?? "") === customer.notes;
     if (!sameItems || !sameCustomer) throw new Error("idempotency_conflict");
+
+    // A verified customer may safely claim a matching guest order created
+    // by an earlier retry of this same idempotent checkout request.
+    // Never transfer an order that is already owned by another account.
+    if (userId && !existing.user_id) {
+      const { data: claimed, error: claimError } = await db
+        .from("orders")
+        .update({ user_id: userId })
+        .eq("order_code", stableOrderCode)
+        .is("user_id", null)
+        .select("order_code, user_id")
+        .maybeSingle();
+      if (claimError) throw new Error("save_failed");
+      if (claimed?.user_id !== userId) {
+        const { data: latest, error: latestError } = await db
+          .from("orders")
+          .select("user_id")
+          .eq("order_code", stableOrderCode)
+          .maybeSingle();
+        if (latestError || latest?.user_id !== userId) throw new Error("idempotency_conflict");
+      }
+    } else if (userId && existing.user_id !== userId) {
+      throw new Error("idempotency_conflict");
+    }
 
     const total = Number(existing.total_toman);
     const shippingToman = Number(existing.shipping_toman);
