@@ -32,6 +32,7 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): P
 function CustomerAccount() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>(null);
   const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const [mode, setMode] = useState<"login"|"signup"|"recover"|"reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -98,6 +99,7 @@ function CustomerAccount() {
       return;
     }
     setBusy(true);
+    setFeedback(mode === "login" ? "در حال بررسی اطلاعات ورود…" : "در حال ساخت حساب مشتری…");
     try {
       if (mode === "login") {
         const { data, error } = await withTimeout(
@@ -111,6 +113,7 @@ function CustomerAccount() {
           console.error("Customer orders after login failed", loadError);
           toast.error("ورود موفق بود؛ دریافت سفارش‌ها کمی طول کشید و می‌توانید دوباره تلاش کنید.");
         });
+        setFeedback("ورود موفق بود؛ حساب شما در حال بارگذاری است.");
         toast.success("با موفقیت وارد حساب شدید.");
       } else {
         const { data, error } = await withTimeout(
@@ -128,13 +131,16 @@ function CustomerAccount() {
             console.error("Customer orders after signup failed", loadError);
             toast.error("حساب ساخته شد؛ دریافت سفارش‌ها کمی طول کشید.");
           });
+          setFeedback("حساب مشتری ساخته شد و وارد حساب شدید.");
           toast.success("حساب مشتری ساخته شد.");
         } else {
+          setFeedback("درخواست ثبت‌نام انجام شد. اگر تأیید ایمیل فعال باشد، لینک ورود برایتان ارسال می‌شود.");
           toast.success("لینک تأیید به ایمیل شما ارسال شد؛ پس از تأیید، وارد حساب شوید.");
         }
       }
     } catch (error) {
       console.error("Customer authentication failed", error);
+      setFeedback(error instanceof Error ? `خطا: ${error.message}` : "ورود یا ساخت حساب انجام نشد؛ دوباره تلاش کنید.");
       toast.error("ورود یا ساخت حساب انجام نشد؛ ایمیل و رمز عبور را بررسی کنید.");
     } finally { setBusy(false); }
   };
@@ -236,8 +242,9 @@ function CustomerAccount() {
             <input type="password" required minLength={mode==="signup" ? 12 : 8} autoComplete={mode==="login"?"current-password":"new-password"} value={password} onChange={e=>setPassword(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
           <Button type="submit" disabled={busy} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
+          <p role="status" aria-live="polite" className="min-h-6 text-center text-sm text-muted-foreground">{feedback}</p>
           {mode === "login" && <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("recover")}>رمز عبور را فراموش کرده‌اید؟</button>}
-          <button type="button" className="text-sm text-primary underline" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
+          <button type="button" className="text-sm text-primary underline" onClick={()=>{setFeedback("");setMode(mode==="login"?"signup":"login");}}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
           <p className="text-xs leading-6 text-muted-foreground">برای فعال‌سازی حساب ممکن است لازم باشد ایمیل خود را تأیید کنید. در ثبت‌نام رمز قوی با حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد انتخاب کنید. رمز عبور شما در ناب استور ذخیره یا قابل مشاهده نیست؛ مدیریت آن بر عهده سرویس امن Supabase Auth است.</p>
         </form>
       ) : (
