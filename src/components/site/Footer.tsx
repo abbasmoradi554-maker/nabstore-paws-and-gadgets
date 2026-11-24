@@ -14,7 +14,7 @@ export function Footer() {
   const footer = content.data?.["footer"] ?? {};
   const footerAbout = footer.about && typeof footer.about.fa === "string" && typeof footer.about.en === "string" ? footer.about : { fa: t("footerAbout"), en: "NABSTORE — an online store." };
   const footerRights = footer.rights && typeof footer.rights.fa === "string" && typeof footer.rights.en === "string" ? footer.rights : { fa: t("rights"), en: "All rights reserved." };
-  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data.categories : categories;
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data["categories"] : categories;
   const instagram = typeof store.instagram === "string" && isSet(store.instagram) ? (store.instagram.startsWith("http") ? store.instagram : `https://instagram.com/${store.instagram.replace(/^@/, "")}`) : "";
   const telegram = typeof store.telegram === "string" && isSet(store.telegram) ? `https://t.me/${store.telegram.replace(/^@/, "")}` : "";
   const socials = [
