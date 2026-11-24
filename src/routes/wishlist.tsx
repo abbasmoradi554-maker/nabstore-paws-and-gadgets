@@ -19,20 +19,20 @@ export const Route = createFileRoute("/wishlist")({
 });
 
 function WishlistPage() {
-  const { t } = useI18n();
+  const { t, l, num } = useI18n();
   const wishlist = useWishlist();
   const catalog = useCatalogProducts();
   const products = (catalog.data ?? []).filter((product) => wishlist.ids.includes(product.id));
 
   if (!wishlist.ready || catalog.isLoading) {
-    return <section className="container-page min-h-[40vh] py-16 text-center text-sm text-muted-foreground">در حال بارگذاری علاقه‌مندی‌ها…</section>;
+    return <section className="container-page min-h-[40vh] py-16 text-center text-sm text-muted-foreground">{l({ fa: "در حال بارگذاری علاقه‌مندی‌ها…", en: "Loading your wishlist…" })}</section>;
   }
 
   if (catalog.isError) {
     return (
       <section className="container-page py-16 text-center">
-        <p className="text-sm text-destructive">دریافت محصولات انجام نشد.</p>
-        <Button className="mt-4" onClick={() => void catalog.refetch()}>تلاش دوباره</Button>
+        <p className="text-sm text-destructive">{l({ fa: "دریافت محصولات انجام نشد.", en: "Products could not be loaded." })}</p>
+        <Button className="mt-4" onClick={() => void catalog.refetch()}>{l({ fa: "تلاش دوباره", en: "Try again" })}</Button>
       </section>
     );
   }
@@ -42,8 +42,8 @@ function WishlistPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-primary">NABSTORE</p>
-          <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">علاقه‌مندی‌های من</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{products.length.toLocaleString("fa-IR")} محصول ذخیره‌شده</p>
+          <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">{l({ fa: "علاقه‌مندی‌های من", en: "My wishlist" })}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{num(products.length)} {l({ fa: "محصول ذخیره‌شده", en: "saved products" })}</p>
         </div>
         {products.length > 0 && (
           <Button variant="outline" onClick={wishlist.clear}>
@@ -62,8 +62,8 @@ function WishlistPage() {
           <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-primary-soft text-primary">
             <Heart className="size-7" />
           </span>
-          <h2 className="mt-5 text-lg font-bold">هنوز محصولی ذخیره نکرده‌ای</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-7 text-muted-foreground">با زدن علامت قلب روی محصولات، آن‌ها را اینجا نگه دار تا بعداً راحت‌تر پیدایشان کنی.</p>
+          <h2 className="mt-5 text-lg font-bold">{l({ fa: "هنوز محصولی ذخیره نکرده‌ای", en: "Your wishlist is empty" })}</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-7 text-muted-foreground">{l({ fa: "با زدن علامت قلب روی محصولات، آن‌ها را اینجا نگه دار تا بعداً راحت‌تر پیدایشان کنی.", en: "Tap the heart on any product to save it here and find it easily later." })}</p>
           <Button asChild className="mt-6">
             <Link to="/shop">{t("continueShopping")}</Link>
           </Button>
