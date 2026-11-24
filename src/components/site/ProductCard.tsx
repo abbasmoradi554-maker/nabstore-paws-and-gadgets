@@ -28,7 +28,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
     >
       <Link to="/product/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden bg-sand">
         <img
-          src={optimizedProductImage(product.images[0], 640)}
+          src={optimizedProductImage(product.images[0] ?? "/favicon.svg", 640)}
           onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }}
           referrerPolicy="no-referrer"
           alt={l(product.name)}
