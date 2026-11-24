@@ -97,7 +97,7 @@ function Checkout() {
     setErrors((er) => ({ ...er, [k]: undefined }));
   };
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const parsed = customerSchema.safeParse(form);
     if (!parsed.success) {
