@@ -48,7 +48,7 @@ function WishlistPage() {
         {products.length > 0 && (
           <Button variant="outline" onClick={wishlist.clear}>
             <Trash2 className="size-4" />
-            پاک‌کردن فهرست
+            {l({ fa: "پاک‌کردن فهرست", en: "Clear wishlist" })}
           </Button>
         )}
       </div>
