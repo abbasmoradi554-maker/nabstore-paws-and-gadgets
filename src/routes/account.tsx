@@ -31,7 +31,6 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): P
 
 function CustomerAccount() {
   const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>(null);
-  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"login"|"signup"|"recover"|"reset">("login");
   const [email, setEmail] = useState("");
@@ -55,18 +54,12 @@ function CustomerAccount() {
 
   useEffect(() => {
     let active = true;
-    // Render the account shell even when the auth service is slow or unreachable.
-    // Session restoration continues in the background and can still update the page.
-    const fallback = window.setTimeout(() => {
-      if (active) setLoading(false);
-    }, 1800);
-
+    // Show the account UI immediately; never block the customer on session restoration.
+    // If a saved session exists, it replaces the login form as soon as auth resolves.
     void supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return;
       if (error) console.error("Customer session restore failed", error);
       setSession(data.session);
-      setLoading(false);
-      window.clearTimeout(fallback);
       if (data.session) {
         void loadOrders(data.session.user.id).catch((loadError) => {
           console.error("Customer order history failed", loadError);
@@ -76,8 +69,6 @@ function CustomerAccount() {
     }).catch((error) => {
       if (!active) return;
       console.error("Customer session restore failed", error);
-      setLoading(false);
-      window.clearTimeout(fallback);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -95,7 +86,6 @@ function CustomerAccount() {
     });
     return () => {
       active = false;
-      window.clearTimeout(fallback);
       listener.subscription.unsubscribe();
     };
   }, []);
@@ -209,8 +199,6 @@ function CustomerAccount() {
     await supabase.auth.signOut();
     setSession(null); setOrders([]);
   };
-
-  if (loading) return <section className="container-page py-16 text-center">در حال بارگذاری حساب…</section>;
 
   return (
     <section className="container-page max-w-4xl py-10">
