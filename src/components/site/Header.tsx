@@ -139,7 +139,7 @@ export function Header() {
               <LangSwitch />
             </div>
             <Button asChild variant="ghost" size="icon-lg" aria-label={t("account")}><Link to="/account"><UserRound className="size-5" /></Link></Button>
-            <Button asChild variant="ghost" size="icon-lg" className="relative hidden sm:inline-flex">
+            <Button asChild variant="ghost" size="icon-lg" className="relative">
               <Link to="/wishlist" aria-label={t("wishlist")}>
                 <Heart className="size-5" />
                 {wishlist.count > 0 && (
