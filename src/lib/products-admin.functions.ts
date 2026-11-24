@@ -57,7 +57,7 @@ export const saveAdminProduct = createServerFn({ method: "POST" })
     const db = await admin(data.accessToken);
     const { accessToken, oldPrice, addedOrder, ...rest } = data;
     const { data: row, error } = await db.from("products").upsert({
-      ...rest, old_price: oldPrice, added_order: addedOrder, updated_at: new Date().toISOString(),
+      ...rest, subcategory: rest.subcategory ?? null, old_price: oldPrice, added_order: addedOrder, updated_at: new Date().toISOString(),
     }).select("*").single();
     if (error) { console.error("saveAdminProduct", error.message); throw new Error("product_save_failed"); }
     return { product: row };
