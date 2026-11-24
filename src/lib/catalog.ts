@@ -15,8 +15,8 @@ export function optimizedProductImage(url: string, width = 480): string {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return url;
-    if (parsed.hostname === "images.weserv.nl" || parsed.hostname.endsWith(".supabase.co")) return url;
-    return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}&w=${width}&h=${width}&fit=contain&output=webp&q=72`;
+    if (parsed.hostname === "images.weserv.nl") return url;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}&w=${width}&h=${width}&fit=contain&output=webp&q=70`;
   } catch {
     return url;
   }
