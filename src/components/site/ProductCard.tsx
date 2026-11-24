@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, SlidersHorizontal } from "lucide-react";
+import { Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { getCategory, discountPercent, hasDiscount, type Product } from "@/data/products";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { optimizedProductImage } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,8 @@ import { cn } from "@/lib/utils";
 export function ProductCard({ product, className }: { product: Product; className?: string }) {
   const { l, t, price, num } = useI18n();
   const cart = useCart();
+  const wishlist = useWishlist();
+  const isSaved = wishlist.has(product.id);
   const category = getCategory(product.category);
   const discount = discountPercent(product);
   const needsOptions = product.options.length > 0;
@@ -43,6 +46,18 @@ export function ProductCard({ product, className }: { product: Product; classNam
           )}
         </div>
       </Link>
+      <Button
+        type="button"
+        size="icon"
+        variant="secondary"
+        aria-label={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
+        aria-pressed={isSaved}
+        title={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
+        onClick={() => wishlist.toggle(product.id)}
+        className="absolute end-3 top-3 z-10 size-9 rounded-full bg-card/95 text-foreground shadow-sm hover:bg-card"
+      >
+        <Heart className={cn("size-4", isSaved && "fill-rose-500 text-rose-500")} />
+      </Button>
 
       <div className="flex flex-1 flex-col gap-1 p-4">
         {category && <span className="text-xs font-medium text-muted-foreground">{l(category.name)}</span>}
