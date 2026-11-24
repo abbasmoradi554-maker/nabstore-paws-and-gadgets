@@ -98,6 +98,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      // Warm up the two external origins used immediately by the storefront.
+      { rel: "preconnect", href: import.meta.env["VITE_SUPABASE_URL"], crossOrigin: "anonymous" },
+      { rel: "preconnect", href: "https://images.weserv.nl", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "//images.weserv.nl" },
       // Keep first paint independent of third-party font servers; CSS uses local system fallbacks.
       {
         rel: "stylesheet",
