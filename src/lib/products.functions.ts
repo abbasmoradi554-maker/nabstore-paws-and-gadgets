@@ -8,8 +8,8 @@ import type { Database } from "@/integrations/supabase/types";
  * Admin/service-role credentials are intentionally not required for storefront reads.
  */
 export const listActiveProducts = createServerFn({ method: "GET" }).handler(async () => {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"];
+  const publishableKey = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
 
   if (!supabaseUrl || !publishableKey) {
     console.error("[catalog] Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY at build time");
