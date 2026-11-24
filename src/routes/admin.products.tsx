@@ -96,7 +96,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
         9000,
         "products_timeout",
       );
-      setItems((result.products ?? []) as Product[]);
+      setItems((result.products ?? []) as unknown as Product[]);
     } finally {
       setProductsLoading(false);
     }
