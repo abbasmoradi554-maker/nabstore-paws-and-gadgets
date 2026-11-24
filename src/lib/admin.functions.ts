@@ -6,8 +6,8 @@ import type { Database } from "@/integrations/supabase/types";
 const ADMIN_EMAIL = "abbasmoradi554@gmail.com";
 
 async function admin(accessToken: string) {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = import.meta.env["VITE_SUPABASE_URL"];
+  const key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) throw new Error("supabase_configuration_missing");
 
   const db = createClient<Database>(url, key, {
