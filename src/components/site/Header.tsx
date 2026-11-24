@@ -8,7 +8,7 @@ import { categories } from "@/data/products";
 import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 import { useStoreContent } from "@/lib/store-content";
-import { comingSoon } from "./coming-soon";
+import { useWishlist } from "@/lib/wishlist";
 import { Logo } from "./Logo";
 
 function SearchBox({ className }: { className?: string }) {
@@ -52,6 +52,7 @@ export function Header() {
   const announcementText = announcement && typeof announcement === "object" ? l(announcement) : t("previewNotice");
   const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
   const cart = useCart();
+  const wishlist = useWishlist();
   const [open, setOpen] = useState(false);
 
   const mainLinks = [
@@ -138,14 +139,15 @@ export function Header() {
               <LangSwitch />
             </div>
             <Button asChild variant="ghost" size="icon-lg" aria-label={t("account")}><Link to="/account"><UserRound className="size-5" /></Link></Button>
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              className="hidden sm:inline-flex"
-              aria-label={t("wishlist")}
-              onClick={() => comingSoon(t("comingSoon"))}
-            >
-              <Heart className="size-5" />
+            <Button asChild variant="ghost" size="icon-lg" className="relative hidden sm:inline-flex">
+              <Link to="/wishlist" aria-label={t("wishlist")}>
+                <Heart className="size-5" />
+                {wishlist.count > 0 && (
+                  <span className="absolute -top-0.5 -end-0.5 grid min-w-5 place-items-center rounded-full bg-highlight px-1 text-[0.65rem] font-bold leading-5 text-highlight-foreground">
+                    {num(wishlist.count)}
+                  </span>
+                )}
+              </Link>
             </Button>
             <Button asChild variant="ghost" size="icon-lg" className="relative">
               <Link to="/cart" aria-label={t("cart")}>
