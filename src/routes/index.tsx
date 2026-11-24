@@ -192,7 +192,7 @@ function CategoriesSection() {
   const { t } = useI18n();
   const h = useHomeText();
   const content = useStoreContent();
-  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data.categories : categories;
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data["categories"] : categories;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={h("catTitle", t("catTitle"))} subtitle={h("catSubtitle", t("catSubtitle"))} link={{ to: "/shop" }} />
@@ -209,7 +209,7 @@ function PhoneSection() {
   const { l } = useI18n();
   const catalog = useCatalogProducts();
   const content = useStoreContent();
-  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data.categories : categories;
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data["categories"] : categories;
   const cat = visibleCategories[0] as (typeof categories)[number] | undefined;
   if (!cat) return null;
   return (
