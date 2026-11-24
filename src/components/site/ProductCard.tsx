@@ -35,7 +35,8 @@ export function ProductCard({ product, className, priority = false }: { product:
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"
-          width={1024}
+          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+          width={480}
           height={1024}
           className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         />
