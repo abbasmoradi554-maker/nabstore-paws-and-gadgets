@@ -169,7 +169,7 @@ function CustomerAccount() {
 
   const updatePassword = async (event: FormEvent) => {
     event.preventDefault();
-    if (password.length < 12 || !(/\\p{Ll}/u.test(password) && /\\p{Lu}/u.test(password) && /\\d/.test(password) && /[^\\p{L}\\d]/u.test(password))) {
+    if (password.length < 12 || !(/\p{Ll}/u.test(password) && /\p{Lu}/u.test(password) && /\d/.test(password) && /[^\p{L}\d]/u.test(password))) {
       toast.error("رمز جدید باید حداقل ۱۲ کاراکتر و شامل حروف کوچک و بزرگ، عدد و نماد باشد.");
       return;
     }
