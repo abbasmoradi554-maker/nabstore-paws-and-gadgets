@@ -19,6 +19,7 @@ export default defineConfig({
   // Workers Builds uses wrangler preview for branch previews and requires this block.
   nitro: {
     cloudflare: {
+      // @ts-expect-error The installed plugin typings omit Nitro’s supported generated Wrangler preview config.
       wrangler: {
         previews: {},
       },
