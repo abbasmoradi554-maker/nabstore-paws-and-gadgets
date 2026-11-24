@@ -10,7 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { optimizedProductImage } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
-export function ProductCard({ product, className }: { product: Product; className?: string }) {
+export function ProductCard({ product, className, priority = false }: { product: Product; className?: string; priority?: boolean }) {
   const { l, t, price, num } = useI18n();
   const cart = useCart();
   const wishlist = useWishlist();
@@ -28,11 +28,12 @@ export function ProductCard({ product, className }: { product: Product; classNam
     >
       <Link to="/product/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden bg-sand">
         <img
-          src={optimizedProductImage(product.images[0] ?? "/favicon.svg", 640)}
+          src={optimizedProductImage(product.images[0] ?? "/favicon.svg", 480)}
           onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }}
           referrerPolicy="no-referrer"
           alt={l(product.name)}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           width={1024}
           height={1024}
@@ -106,7 +107,7 @@ export function ProductGrid({ products, className }: { products: Product[]; clas
   return (
     <div className={cn("grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4", className)}>
       {products.map((p) => (
-        <ProductCard key={p.id} product={p} />
+        <ProductCard key={p.id} product={p} priority={products.indexOf(p) < 4} />
       ))}
     </div>
   );
