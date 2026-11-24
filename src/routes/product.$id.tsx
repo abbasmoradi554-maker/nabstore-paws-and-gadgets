@@ -10,12 +10,28 @@ import { optimizedProductImage, useCatalogProducts } from "@/lib/catalog";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { siteUrl } from "@/lib/site-config";
 
 
 export const Route = createFileRoute("/product/$id")({
-  head: ({ params }) => ({
-    meta: [{ title: "محصول | ناب استور" }, { name: "robots", content: "noindex" }],
-  }),
+  head: ({ params }) => {
+    const productLabel = params.id.split("-").filter(Boolean).join(" ");
+    const title = `${productLabel} | خرید از ناب استور`;
+    const description = "مشاهده قیمت، تصاویر، مشخصات و گزینه‌های محصول و ثبت سفارش از فروشگاه اینترنتی ناب استور.";
+    const url = `${siteUrl}/product/${encodeURIComponent(params.id)}`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "product" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   notFoundComponent: ProductNotFound,
   component: ProductPage,
 });
