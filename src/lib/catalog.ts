@@ -10,13 +10,13 @@ type Row = {
 };
 
 /** Serve third-party product photos through a free image CDN, resized and converted to WebP. */
-export function optimizedProductImage(url: string, width = 900): string {
+export function optimizedProductImage(url: string, width = 480): string {
   if (!url || url.startsWith("/") || url.startsWith("data:")) return url;
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return url;
     if (parsed.hostname === "images.weserv.nl") return url;
-    return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}&w=${width}&h=${width}&fit=contain&output=webp&q=80`;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}&w=${width}&h=${width}&fit=contain&output=webp&q=72`;
   } catch {
     return url;
   }
