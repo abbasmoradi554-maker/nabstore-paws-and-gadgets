@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { siteUrl } from "@/lib/site-config";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { faqs } from "@/data/pages";
@@ -13,10 +14,10 @@ export const Route = createFileRoute("/faq")({
       { property: "og:title", content: "پرسش‌های متداول | ناب استور" },
       { property: "og:description", content: "سفارش، پرداخت، ارسال و بازگشت کالا در ناب استور." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://nabstore-paws-and-gadgets.lovable.app/faq" },
+      { property: "og:url", content: `${siteUrl}/faq` },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://nabstore-paws-and-gadgets.lovable.app/faq" }],
+    links: [{ rel: "canonical", href: `${siteUrl}/faq` }],
   }),
   component: Faq,
 });
