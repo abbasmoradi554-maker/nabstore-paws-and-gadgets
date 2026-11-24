@@ -18,6 +18,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/lib/cart";
+import { WishlistProvider } from "@/lib/wishlist";
 
 function NotFoundComponent() {
   return (
@@ -137,16 +138,18 @@ function RootComponent() {
             <Outlet />
           </main>
         ) : (
-          <CartProvider>
-            <div className="flex min-h-screen flex-col">
+          <WishlistProvider>
+            <CartProvider>
+              <div className="flex min-h-screen flex-col">
               <Header />
               <main className="flex-1">
                 {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
                 <Outlet />
               </main>
               <Footer />
-            </div>
-          </CartProvider>
+              </div>
+            </CartProvider>
+          </WishlistProvider>
         )}
         <Toaster position="bottom-center" />
       </I18nProvider>
