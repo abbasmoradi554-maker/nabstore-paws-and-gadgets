@@ -11,7 +11,8 @@ export function useStoreContent() {
       if (error) throw error;
       return Object.fromEntries((data ?? []).map((row) => [row.key, row.value]));
     },
-    staleTime: 30_000,
+    // The same content is reused by the header and all storefront routes.
+    staleTime: 120_000,
     retry: 1,
   });
 }
