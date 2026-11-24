@@ -106,8 +106,8 @@ export function ProductCard({ product, className, priority = false }: { product:
 export function ProductGrid({ products, className }: { products: Product[]; className?: string }) {
   return (
     <div className={cn("grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4", className)}>
-      {products.map((p) => (
-        <ProductCard key={p.id} product={p} priority={products.indexOf(p) < 4} />
+      {products.map((p, index) => (
+        <ProductCard key={p.id} product={p} priority={index < 4} />
       ))}
     </div>
   );
