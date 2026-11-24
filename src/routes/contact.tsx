@@ -28,8 +28,10 @@ function Contact() {
   const store = content.data?.["store"] ?? siteConfig;
   const instagram = typeof store.instagram === "string" ? store.instagram : "";
   const telegram = typeof store.telegram === "string" ? store.telegram : "";
-  const instagramHref = instagram && !/^\\[.*\\]$/.test(instagram) ? (instagram.startsWith("http") ? instagram : `https://instagram.com/${instagram.replace(/^@/, "")}`) : "";
-  const telegramHref = telegram && !/^\\[.*\\]$/.test(telegram) ? `https://t.me/${telegram.replace(/^@/, "")}` : "";
+  const instagramHref = isSet(instagram)
+    ? (instagram.startsWith("http") ? instagram : `https://instagram.com/${instagram.replace(/^@/, "")}`)
+    : "";
+  const telegramHref = isSet(telegram) ? `https://t.me/${telegram.replace(/^@/, "")}` : "";
   const items = [
     { Icon: Phone, label: t("phone"), value: store.phone, href: isSet(store.phone) ? `tel:${store.phone}` : "", ltr: true },
     { Icon: Mail, label: t("email"), value: store.email, href: isSet(store.email) ? `mailto:${store.email}` : "", ltr: true },
