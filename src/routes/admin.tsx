@@ -18,8 +18,8 @@ const LazyAdminContentPage = lazy(() =>
 
 export const Route = createFileRoute("/admin")({
   validateSearch: (search: Record<string, unknown>) => ({
-    tab: search.tab === "products" ? "products" as const : search.tab === "content" ? "content" as const : "orders" as const,
-    recovery: search.recovery === "1",
+    tab: search["tab"] === "products" ? "products" as const : search["tab"] === "content" ? "content" as const : "orders" as const,
+    recovery: search["recovery"] === "1",
   }),
   head: () => ({
     meta: [
@@ -570,7 +570,7 @@ function AdminPage() {
                   {expandedOrderId === order.id ? <tr className="border-t bg-muted/20"><td colSpan={8} className="p-4"><div className="grid gap-3 text-sm sm:grid-cols-2">
                     <div><span className="text-muted-foreground">استان:</span> {order.province || "—"}</div><div><span className="text-muted-foreground">کد پستی:</span> <b dir="ltr">{order.postal_code || "—"}</b></div>
                     <div className="sm:col-span-2"><span className="text-muted-foreground">نشانی:</span> {order.address || "—"}</div><div className="sm:col-span-2"><span className="text-muted-foreground">توضیحات مشتری:</span> {order.notes || "—"}</div>
-                    <div className="sm:col-span-2"><b>اقلام سفارش</b>{Array.isArray(order.items) && order.items.length ? <ul className="mt-2 grid gap-1">{order.items.map((rawItem, index) => { const item = rawItem && typeof rawItem === "object" ? rawItem as Record<string, unknown> : {}; const itemName = String(item.nameFa ?? item.name ?? item.title ?? item.product_name ?? item.productName ?? "محصول"); const quantity = Number(item.quantity ?? item.qty ?? 1); const price = Number(item.price ?? item.unit_price ?? item.unitPrice ?? 0); const lineTotal = Number(item.lineTotal ?? 0); return <li key={index} className="flex flex-wrap justify-between gap-2 rounded-lg border bg-background px-3 py-2"><span>{itemName} × {Number.isFinite(quantity) ? quantity : 1}</span><span className="text-muted-foreground">{lineTotal > 0 ? formatMoney(lineTotal) : price > 0 ? formatMoney(price) : ""}</span></li>; })}</ul> : <p className="mt-2 text-muted-foreground">جزئیات اقلام در داده این سفارش موجود نیست.</p>}</div>
+                    <div className="sm:col-span-2"><b>اقلام سفارش</b>{Array.isArray(order.items) && order.items.length ? <ul className="mt-2 grid gap-1">{order.items.map((rawItem, index) => { const item = rawItem && typeof rawItem === "object" ? rawItem as Record<string, unknown> : {}; const itemName = String(item["nameFa"] ?? item["name"] ?? item["title"] ?? item["product_name"] ?? item["productName"] ?? "محصول"); const quantity = Number(item["quantity"] ?? item["qty"] ?? 1); const price = Number(item["price"] ?? item["unit_price"] ?? item["unitPrice"] ?? 0); const lineTotal = Number(item["lineTotal"] ?? 0); return <li key={index} className="flex flex-wrap justify-between gap-2 rounded-lg border bg-background px-3 py-2"><span>{itemName} × {Number.isFinite(quantity) ? quantity : 1}</span><span className="text-muted-foreground">{lineTotal > 0 ? formatMoney(lineTotal) : price > 0 ? formatMoney(price) : ""}</span></li>; })}</ul> : <p className="mt-2 text-muted-foreground">جزئیات اقلام در داده این سفارش موجود نیست.</p>}</div>
                   </div></td></tr> : null}
                   </>
                 ))}
