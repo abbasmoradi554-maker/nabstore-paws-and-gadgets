@@ -82,7 +82,7 @@ function Checkout() {
   const cart = useCart();
   const catalog = useCatalogProducts();
   const storeContent = useStoreContent();
-  const shippingConfig = storeContent.data?.shipping ?? { flatFeeToman: 59000, freeAboveToman: 2000000, enabled: true };
+  const shippingConfig = storeContent.data?.["shipping"] ?? { flatFeeToman: 59000, freeAboveToman: 2000000, enabled: true };
   const flatShipping = Number.isSafeInteger(Number(shippingConfig.flatFeeToman)) ? Math.max(0, Number(shippingConfig.flatFeeToman)) : 59000;
   const freeAbove = Number.isSafeInteger(Number(shippingConfig.freeAboveToman)) ? Math.max(0, Number(shippingConfig.freeAboveToman)) : 2000000;
   const shippingToman = shippingConfig.enabled === false || (freeAbove > 0 && cart.total >= freeAbove) ? 0 : flatShipping;
