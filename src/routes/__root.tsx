@@ -101,8 +101,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // Warm up the two external origins used immediately by the storefront.
       { rel: "preconnect", href: import.meta.env["VITE_SUPABASE_URL"], crossOrigin: "anonymous" },
       { rel: "preconnect", href: "https://images.weserv.nl", crossOrigin: "anonymous" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap",
+      },
       { rel: "dns-prefetch", href: "//images.weserv.nl" },
-      // Keep first paint independent of third-party font servers; CSS uses local system fallbacks.
+      // Load the selected open-source Vazirmatn family; system fallbacks remain available.
       {
         rel: "stylesheet",
         href: appCss,
