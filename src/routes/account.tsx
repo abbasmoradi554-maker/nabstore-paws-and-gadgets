@@ -248,7 +248,7 @@ function CustomerAccount() {
             <input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 rounded-xl border bg-background px-4" />
           </label>
           <Button type="submit" disabled={busy} className="w-full">{busy ? "در حال ارسال…" : "ارسال لینک بازیابی"}</Button>
-          <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("login")}>بازگشت به ورود</button>
+          <Button type="button" variant="link" className="h-auto p-0 text-sm" onClick={()=>{setFeedback("");setMode("login");}}>بازگشت به ورود</Button>
         </form>
       ) : !session ? (
         <form noValidate onSubmit={authenticate} className="mx-auto grid max-w-lg gap-4 rounded-3xl border bg-card p-6 sm:p-8">
@@ -262,7 +262,7 @@ function CustomerAccount() {
           <Button type="button" disabled={busy} onClick={() => void authenticate()} className="w-full">{busy ? "لطفاً صبر کنید…" : mode==="login" ? <><LogIn className="size-4" /> ورود</> : "ساخت حساب"}</Button>
           <p role="status" aria-live="polite" className="min-h-6 text-center text-sm text-muted-foreground">{feedback}</p>
           {mode === "login" && <button type="button" className="text-sm text-primary underline" onClick={()=>setMode("recover")}>رمز عبور را فراموش کرده‌اید؟</button>}
-          <button type="button" className="text-sm text-primary underline" onClick={()=>{setFeedback("");setMode(mode==="login"?"signup":"login");}}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</button>
+          <Button type="button" variant="link" className="h-auto p-0 text-sm" onClick={()=>{setFeedback("");setPassword("");setConfirmPassword("");setMode(mode==="login"?"signup":"login");}}>{mode==="login"?"حساب ندارید؟ ثبت‌نام کنید":"قبلاً حساب ساخته‌اید؟ وارد شوید"}</Button>
           <p className="text-xs leading-6 text-muted-foreground">برای فعال‌سازی حساب ممکن است لازم باشد ایمیل خود را تأیید کنید. در ثبت‌نام رمز قوی با حداقل ۱۲ کاراکتر، حروف کوچک و بزرگ، عدد و نماد انتخاب کنید. رمز عبور شما در ناب استور ذخیره یا قابل مشاهده نیست؛ مدیریت آن بر عهده سرویس امن Supabase Auth است.</p>
         </form>
       ) : (
