@@ -47,7 +47,7 @@ function useHomeText() {
   const { l } = useI18n();
   const content = useStoreContent();
   return (key: string, fallback: string) => {
-    const value = content.data?.home?.[key];
+    const value = content.data?.["home"]?.[key];
     return value && typeof value === "object" && "fa" in value && "en" in value
       ? l(value as { fa: string; en: string })
       : fallback;
@@ -75,7 +75,7 @@ function Index() {
 function Hero() {
   const { t, l } = useI18n();
   const content = useStoreContent();
-  const home = content.data?.home ?? {};
+  const home = content.data?.["home"] ?? {};
   const localized = (value: unknown, fallback: string) => value && typeof value === "object" && "fa" in value && "en" in value ? l(value as { fa: string; en: string }) : fallback;
   return (
     <section className="container-page pt-4 sm:pt-6">
@@ -192,7 +192,7 @@ function CategoriesSection() {
   const { t } = useI18n();
   const h = useHomeText();
   const content = useStoreContent();
-  const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data.categories : categories;
   return (
     <section className="container-page mt-16 sm:mt-20">
       <SectionHeader title={h("catTitle", t("catTitle"))} subtitle={h("catSubtitle", t("catSubtitle"))} link={{ to: "/shop" }} />
@@ -209,7 +209,7 @@ function PhoneSection() {
   const { l } = useI18n();
   const catalog = useCatalogProducts();
   const content = useStoreContent();
-  const visibleCategories = Array.isArray(content.data?.categories) ? content.data.categories : categories;
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data.categories : categories;
   const cat = visibleCategories[0] as (typeof categories)[number] | undefined;
   if (!cat) return null;
   return (
