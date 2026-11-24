@@ -52,7 +52,7 @@ export function Header() {
   const content = useStoreContent();
   const announcement = content.data?.["home"]?.announcement;
   const announcementText = announcement && typeof announcement === "object" ? l(announcement) : t("previewNotice");
-  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data.categories : categories;
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data["categories"] : categories;
   const cart = useCart();
   const wishlist = useWishlist();
   const [open, setOpen] = useState(false);
