@@ -267,7 +267,7 @@ function FormField({ label, error, className, children }: { label: string; error
 function OrderPlaced({ order }: { order: Placed }) {
   const { t, price, num } = useI18n();
   const content = useStoreContent();
-  const store = content.data?.store ?? siteConfig;
+  const store = content.data?.["store"] ?? siteConfig;
   const summary = buildSummary(order);
   const telegram = typeof store.telegram === "string" ? store.telegram.replace(/^@/, "") : "";
   const whatsapp = typeof store.whatsapp === "string" ? store.whatsapp.replace(/\D/g, "") : "";
