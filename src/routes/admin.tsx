@@ -130,17 +130,20 @@ function AdminPage() {
   // Keep the visible tab synchronized with browser back/forward navigation.
   useEffect(() => setActiveTab(tab), [tab]);
 
-  const loadOrders = async () => {
+  const loadOrders = async (knownAccessToken?: string) => {
     setOrdersLoading(true);
     try {
       setOrdersError(false);
-      const { data: sessionData, error: sessionError } = await withTimeout(
-        supabase.auth.getSession(),
-        7000,
-        "session_timeout",
-      );
-      const accessToken = sessionData.session?.access_token;
-      if (sessionError || !accessToken) throw new Error("admin_session_missing");
+      let accessToken = knownAccessToken;
+      if (!accessToken) {
+        const { data: sessionData, error: sessionError } = await withTimeout(
+          supabase.auth.getSession(),
+          7000,
+          "session_timeout",
+        );
+        accessToken = sessionData.session?.access_token;
+        if (sessionError || !accessToken) throw new Error("admin_session_missing");
+      }
       const result = await withTimeout(
         getAdminOrders({ data: { accessToken, offset: 0 } }),
         15000,
@@ -239,7 +242,9 @@ function AdminPage() {
       // screen becomes usable immediately while orders load independently.
       setSubmitting(false);
       try {
-        await loadOrders();
+        // Use the access token returned by signInWithPassword directly.
+        // This avoids an immediate storage/session re-read race in browser previews.
+        await loadOrders(data.session.access_token);
         toast.success("با موفقیت وارد پنل مدیریت شدید");
       } catch {
         toast.error("ورود موفق بود، اما دریافت سفارش‌ها ناموفق بود؛ از به‌روزرسانی استفاده کنید.");
