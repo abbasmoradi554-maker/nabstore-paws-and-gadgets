@@ -238,17 +238,13 @@ function AdminPage() {
         // Storage may be disabled; browser password managers can still offer to save credentials.
       }
       setPassword("");
-      // Complete authentication before loading the dashboard data. The admin
-      // screen becomes usable immediately while orders load independently.
+      // Finish the login event immediately so React can commit the authenticated
+      // dashboard before any admin data request starts or waits on the network.
+      // Never await the orders request inside the submit handler.
       setSubmitting(false);
-      try {
-        // Use the access token returned by signInWithPassword directly.
-        // This avoids an immediate storage/session re-read race in browser previews.
-        await loadOrders(data.session.access_token);
-        toast.success("با موفقیت وارد پنل مدیریت شدید");
-      } catch {
-        toast.error("ورود موفق بود، اما دریافت سفارش‌ها ناموفق بود؛ از به‌روزرسانی استفاده کنید.");
-      }
+      void loadOrders(data.session.access_token)
+        .then(() => toast.success("با موفقیت وارد پنل مدیریت شدید"))
+        .catch(() => toast.error("ورود انجام شد، اما دریافت سفارش‌ها ناموفق بود؛ از به‌روزرسانی استفاده کنید."));
     } catch (error) {
       console.error("Admin login failed", error);
       const message = error instanceof Error ? error.message : "";
