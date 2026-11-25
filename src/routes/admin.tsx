@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { getAdminOrders, updateAdminOrderStatus } from "@/lib/admin.functions";
 
 // Defensive route fallback: some Workers preview builds have served the /admin
 // component at /admin/products even while resolving the products route metadata.
@@ -133,18 +134,20 @@ function AdminPage() {
     setOrdersLoading(true);
     try {
       setOrdersError(false);
-      const { data, error } = await withTimeout(
-        supabase.from("orders")
-          .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman, status, created_at")
-          .order("created_at", { ascending: false })
-          .range(0, 49)
-          .abortSignal(AbortSignal.timeout(10000)),
-        11000,
+      const { data: sessionData, error: sessionError } = await withTimeout(
+        supabase.auth.getSession(),
+        7000,
+        "session_timeout",
+      );
+      const accessToken = sessionData.session?.access_token;
+      if (sessionError || !accessToken) throw new Error("admin_session_missing");
+      const result = await withTimeout(
+        getAdminOrders({ data: { accessToken, offset: 0 } }),
+        15000,
         "orders_timeout",
       );
-      if (error) throw error;
-      setOrders((data ?? []) as Order[]);
-      setHasMoreOrders((data?.length ?? 0) === 50);
+      setOrders(result.orders as Order[]);
+      setHasMoreOrders(result.orders.length === 50);
       setOrdersError(false);
       setLoggedIn(true);
     } catch (error) {
@@ -348,17 +351,11 @@ function AdminPage() {
     if (loadingMore || !hasMoreOrders) return;
     setLoadingMore(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session?.access_token) throw new Error("session_expired");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error("session_expired");
       const from = orders.length;
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman, status, created_at")
-        .order("created_at", { ascending: false })
-        .range(from, from + 49)
-        .abortSignal(AbortSignal.timeout(10000));
-      if (error) throw error;
-      const page = (data ?? []) as Order[];
+      const result = await getAdminOrders({ data: { accessToken: sessionData.session.access_token, offset: from } });
+      const page = result.orders as Order[];
       setOrders((current) => {
         const seen = new Set(current.map((order) => order.id));
         return [...current, ...page.filter((order) => !seen.has(order.id))];
@@ -388,17 +385,17 @@ function AdminPage() {
 
   const changeStatus = async (orderId: string, status: string) => {
     try {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session?.access_token) throw new Error("session_expired");
-      const { data: updated, error } = await withTimeout(supabase
-        .from("orders")
-        .update({ status: status as keyof typeof statusLabels & string })
-        .eq("id", orderId)
-        .select("id, status")
-        .single(), 11000, "order_update_timeout");
-      if (error || !updated) throw error ?? new Error("order_update_failed");
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !data.session?.access_token) throw new Error("session_expired");
+      const result = await withTimeout(updateAdminOrderStatus({
+        data: {
+          accessToken: data.session.access_token,
+          orderId,
+          status: status as "pending_review" | "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled",
+        },
+      }), 12000, "order_update_timeout");
       setOrders((current) => current.map((order) =>
-        order.id === orderId ? { ...order, status: updated.status } : order
+        order.id === orderId ? { ...order, status: result.order.status } : order
       ));
       toast.success("وضعیت سفارش تغییر کرد");
     } catch {
