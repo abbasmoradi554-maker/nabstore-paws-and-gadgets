@@ -28,7 +28,26 @@ function ShippingPage() {
   const freeAbove = Number(shipping?.freeAboveToman);
   const valid = Number.isSafeInteger(fee) && fee >= 0 && Number.isSafeInteger(freeAbove) && freeAbove >= 0;
 
-  if (!valid) return <InfoPage page={pages.shipping} />;
+  if (content.isLoading) {
+    return <section className="container-page min-h-[40vh] pt-10 text-center text-sm text-muted-foreground">در حال دریافت اطلاعات ارسال…</section>;
+  }
+
+  if (content.isError || !valid) {
+    const fallback = {
+      ...pages.shipping,
+      intro: {
+        fa: "هزینه و روش ارسال پیش از ثبت نهایی سفارش نمایش داده می‌شود. برای اطلاع از جزئیات می‌توانید با پشتیبانی تماس بگیرید.",
+        en: "Shipping cost and method are shown before order confirmation. Contact support for details.",
+      },
+      sections: pages.shipping.sections.map((section, index) => index === 0
+        ? { ...section, body: {
+            fa: "مبلغ نهایی ارسال پیش از ثبت سفارش نمایش داده می‌شود. برای جزئیات بیشتر با پشتیبانی تماس بگیرید.",
+            en: "The final shipping amount is shown before placing an order. Contact support for details.",
+          } }
+        : section),
+    };
+    return <InfoPage page={fallback} />;
+  }
 
   const copy = shipping?.enabled === false || fee === 0
     ? {
