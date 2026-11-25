@@ -42,7 +42,10 @@ function Faq() {
             fa: `هزینه ارسال عادی ${shippingFee.toLocaleString("fa-IR")} تومان است.`,
             en: `Standard shipping is ${shippingFee.toLocaleString("en-US")} Toman.`,
           }
-    : null;
+    : {
+        fa: "هزینه ارسال پیش از ثبت نهایی سفارش نمایش داده می‌شود.",
+        en: "Shipping cost is shown before order confirmation.",
+      };
   const synchronizedQuestions = questions.map((item: typeof faqs[number]) => {
     const questionFa = String(item.q.fa ?? "");
     const questionEn = String(item.q.en ?? "").toLowerCase();
