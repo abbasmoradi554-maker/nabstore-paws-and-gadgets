@@ -29,6 +29,10 @@ const tokenSchema = z.object({
   accessToken: z.string().min(20).max(4096),
 });
 
+const ordersInputSchema = tokenSchema.extend({
+  offset: z.number().int().min(0).max(100000).default(0),
+});
+
 const updateSchema = tokenSchema.extend({
   orderId: z.string().uuid(),
   status: z.enum(["pending_review", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
@@ -39,14 +43,14 @@ async function requireAdmin(accessToken: string) {
 }
 
 export const getAdminOrders = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => tokenSchema.parse(input))
+  .inputValidator((input: unknown) => ordersInputSchema.parse(input))
   .handler(async ({ data }) => {
     const supabaseAdmin = await requireAdmin(data.accessToken);
     const { data: orders, error } = await supabaseAdmin
       .from("orders")
-      .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+      .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman, status, created_at")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .range(data.offset, data.offset + 49);
 
     if (error) {
       console.error("getAdminOrders failed", error.message);
