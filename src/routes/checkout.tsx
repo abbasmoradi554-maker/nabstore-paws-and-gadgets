@@ -82,10 +82,14 @@ function Checkout() {
   const cart = useCart();
   const catalog = useCatalogProducts();
   const storeContent = useStoreContent();
-  const shippingConfig = storeContent.data?.["shipping"] ?? { flatFeeToman: 59000, freeAboveToman: 2000000, enabled: true };
-  const flatShipping = Number.isSafeInteger(Number(shippingConfig.flatFeeToman)) ? Math.max(0, Number(shippingConfig.flatFeeToman)) : 59000;
-  const freeAbove = Number.isSafeInteger(Number(shippingConfig.freeAboveToman)) ? Math.max(0, Number(shippingConfig.freeAboveToman)) : 2000000;
-  const shippingToman = shippingConfig.enabled === false || (freeAbove > 0 && cart.total >= freeAbove) ? 0 : flatShipping;
+  const shippingConfig = storeContent.data?.["shipping"];
+  const flatShipping = Number(shippingConfig?.flatFeeToman);
+  const freeAbove = Number(shippingConfig?.freeAboveToman);
+  const shippingConfigValid = Number.isSafeInteger(flatShipping) && flatShipping >= 0 &&
+    Number.isSafeInteger(freeAbove) && freeAbove >= 0 && typeof shippingConfig?.enabled === "boolean";
+  const shippingToman = shippingConfigValid
+    ? shippingConfig.enabled === false || (freeAbove > 0 && cart.total >= freeAbove) ? 0 : flatShipping
+    : null;
   const submit = useServerFn(placeOrder);
   const [form, setForm] = useState<CustomerInput>(empty);
   const [errors, setErrors] = useState<Partial<Record<Field, DictKey>>>({});
@@ -164,6 +168,21 @@ function Checkout() {
         <Button asChild size="lg" className="mt-6 rounded-xl">
           <Link to="/shop">{t("continueShopping")}</Link>
         </Button>
+      </section>
+    );
+  }
+
+  if (storeContent.isLoading) {
+    return <section className="container-page min-h-[40vh] pt-10 text-center text-sm text-muted-foreground">در حال دریافت تنظیمات نهایی ارسال…</section>;
+  }
+
+  if (storeContent.isError || !shippingConfigValid || shippingToman === null) {
+    return (
+      <section className="container-page min-h-[40vh] pt-10 text-center">
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-6">
+          <p className="text-sm text-destructive">تنظیمات هزینه ارسال دریافت نشد؛ برای جلوگیری از نمایش مبلغ اشتباه، ثبت سفارش موقتاً متوقف شده است.</p>
+          <Button className="mt-4" onClick={() => void storeContent.refetch()}>تلاش دوباره</Button>
+        </div>
       </section>
     );
   }
