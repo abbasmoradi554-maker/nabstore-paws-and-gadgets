@@ -171,7 +171,7 @@ function ValueStrip() {
   const freeAbove = Number(shipping?.freeAboveToman);
   const hasShippingConfig = Number.isSafeInteger(fee) && fee >= 0 && Number.isSafeInteger(freeAbove) && freeAbove >= 0;
   const shippingText = !hasShippingConfig
-    ? h("valueShippingText", t("valueShippingText"))
+    ? l({ fa: "هزینه ارسال پیش از ثبت نهایی سفارش نمایش داده می‌شود", en: "Shipping cost is shown before order confirmation" })
     : shipping?.enabled === false || fee === 0
       ? l({ fa: "ارسال سفارش‌ها رایگان است", en: "Shipping is free" })
       : freeAbove > 0
