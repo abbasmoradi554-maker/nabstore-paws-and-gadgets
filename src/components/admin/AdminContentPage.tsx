@@ -19,7 +19,7 @@ const sectionMeta: Record<SectionKey, { title: string; description: string; icon
 };
 const defaults: Record<SectionKey, unknown> = {
   store: siteConfig,
-  shipping: { flatFeeToman: 59000, freeAboveToman: 2000000, enabled: true },
+  shipping: { flatFeeToman: 250000, freeAboveToman: 4000000, enabled: true },
   home: {
     heroEyebrow: { fa: "مجموعه جدید فصل", en: "New season collection" },
     heroTitle: { fa: "آسایش هوشمند برای همراهان کوچک شما", en: "Smart comfort for your little companions" },
@@ -29,7 +29,7 @@ const defaults: Record<SectionKey, unknown> = {
     promoPhoneTitle: { fa: "قاب گوشی و لوازم جانبی", en: "Phone cases & accessories" }, promoPhoneText: { fa: "قاب، گلس، محافظ لنز و هولدر", en: "Cases, screen guards, lens protectors and holders" },
     announcement: { fa: "محصولات نمونه‌اند — قیمت و موجودی نهایی پس از ثبت سفارش توسط پشتیبانی با شما هماهنگ می‌شود.", en: "Sample products — support confirms final price and availability after ordering." },
     valueShipping: { fa: "ارسال به سراسر کشور", en: "Nationwide shipping" },
-    valueShippingText: { fa: "ارسال عادی ۵۹ هزار تومان؛ خرید بالای ۲ میلیون تومان رایگان", en: "Standard shipping 59,000 Toman; free over 2,000,000 Toman" },
+    valueShippingText: { fa: "ارسال عادی ۲۵۰ هزار تومان؛ خرید ۴ میلیون تومان و بیشتر رایگان", en: "Standard shipping 250,000 Toman; free on orders of 4,000,000 Toman or more" },
     valuePackaging: { fa: "بسته‌بندی ایمن", en: "Safe packaging" },
     valuePackagingText: { fa: "بسته‌بندی مناسب برای حمل", en: "Packed carefully for transit" },
     valueSupport: { fa: "پشتیبانی پیش و پس از فروش", en: "Pre- and post-sale support" },
@@ -77,6 +77,7 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
   const [values, setValues] = useState<Record<SectionKey, unknown>>(defaults);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState<Record<string, boolean>>({});
 
@@ -98,9 +99,11 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
       }
       setValues(next);
       setHasSaved(Object.fromEntries((data ?? []).map((row) => [row.key, true])));
+      setLoadError(false);
     } catch (error) {
       console.error("CMS content load failed", error);
-      toast.error("دریافت محتوای سایت انجام نشد؛ اتصال و مجوز پنل را بررسی کنید.");
+      setLoadError(true);
+      toast.error("دریافت محتوای سایت انجام نشد؛ اتصال و مجوز پنل را بررسی کنید. تا دریافت موفق اطلاعات، ذخیره غیرفعال است.");
     } finally {
       setLoading(false);
     }
@@ -114,6 +117,7 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
   }, [draft]);
 
   const save = async () => {
+    if (loadError) { toast.error("ابتدا اطلاعات ذخیره‌شده را با تازه‌سازی دریافت کنید؛ برای جلوگیری از بازنویسی ناخواسته، ذخیره مسدود است."); return; }
     if (formatted === null) { toast.error("ساختار JSON معتبر نیست."); return; }
     setSaving(true);
     try {
@@ -158,13 +162,14 @@ export function AdminContentPage({ onBack }: { onBack?: () => void }) {
         <div className="min-w-0 rounded-2xl border bg-card p-4 sm:p-6">
           <div className="mb-4 flex items-center gap-3"><Icon className="size-5 text-primary" /><div><h2 className="font-bold">{active.title}</h2><p className="text-sm text-muted-foreground">{active.description}</p></div></div>
           {loading ? <div className="flex min-h-60 items-center justify-center gap-2 text-muted-foreground"><LoaderCircle className="size-5 animate-spin" /> در حال دریافت محتوا…</div> : <>
+            {loadError ? <div role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">دریافت اطلاعات ذخیره‌شده ناموفق بود. لطفاً تازه‌سازی را بزنید. تا زمان دریافت موفق اطلاعات، امکان ذخیره تغییرات وجود ندارد.</div> : null}
             <label className="mb-2 block text-sm font-medium" htmlFor="cms-json">محتوای این بخش</label>
             <textarea id="cms-json" dir="ltr" spellCheck={false} value={draft} onChange={(event) => setDraft(event.target.value)} className="min-h-[420px] w-full rounded-xl border bg-background p-4 font-mono text-xs leading-6 outline-none focus:border-primary" />
             <p className="mt-2 text-xs leading-6 text-muted-foreground">{helpText}</p>
             {formatted === null ? <p className="mt-2 text-sm text-destructive">JSON ناقص یا نامعتبر است.</p> : null}
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button onClick={() => void save()} disabled={saving || formatted === null}><Save className="size-4" /> {saving ? "در حال ذخیره…" : "ذخیره تغییرات"}</Button>
-              <Button variant="outline" onClick={resetDraft} disabled={saving}>بازگردانی پیش‌فرض این بخش</Button>
+              <Button onClick={() => void save()} disabled={saving || loading || loadError || formatted === null}><Save className="size-4" /> {saving ? "در حال ذخیره…" : "ذخیره تغییرات"}</Button>
+              <Button variant="outline" onClick={resetDraft} disabled={saving || loading || loadError}>بازگردانی پیش‌فرض این بخش</Button>
             </div>
           </>}
         </div>
