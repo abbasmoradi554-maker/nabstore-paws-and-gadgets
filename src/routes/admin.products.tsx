@@ -56,6 +56,101 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): P
   ]).finally(() => { if (timer !== undefined) window.clearTimeout(timer); });
 }
 
+async function uploadLargeImageWithTus(
+  file: File,
+  objectPath: string,
+  accessToken: string,
+): Promise<void> {
+  const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"];
+  const apiKey = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+  if (!supabaseUrl || !apiKey) throw new Error("storage_configuration_missing");
+
+  const projectUrl = new URL(supabaseUrl);
+  const storageHost = projectUrl.hostname.replace(/\\.supabase\\.co$/, ".storage.supabase.co");
+  const endpoint = `${projectUrl.protocol}//${storageHost}/storage/v1/upload/resumable`;
+  const encodeMetadata = (value: string) =>
+    btoa(Array.from(new TextEncoder().encode(value), (byte) => String.fromCharCode(byte)).join(""));
+  const metadata = [
+    ["bucketName", "product-images"],
+    ["objectName", objectPath],
+    ["contentType", file.type],
+    ["cacheControl", "31536000"],
+    ["metadata", JSON.stringify({})],
+  ].map(([key, value]) => `${key} ${encodeMetadata(value)}`).join(",");
+
+  const headers = {
+    apikey: apiKey,
+    authorization: `Bearer ${accessToken}`,
+    "Tus-Resumable": "1.0.0",
+  };
+  const request = async (url: string, init: RequestInit, timeoutMs = 120000) => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...init, headers: { ...headers, ...init.headers }, signal: controller.signal });
+    } finally {
+      window.clearTimeout(timer);
+    }
+  };
+
+  const created = await request(endpoint, {
+    method: "POST",
+    headers: {
+      "Upload-Length": String(file.size),
+      "Upload-Metadata": metadata,
+      "x-upsert": "false",
+    },
+  });
+  if (!created.ok) throw new Error(`tus_create_failed_${created.status}: ${(await created.text()).slice(0, 160)}`);
+  const location = created.headers.get("Location");
+  if (!location) throw new Error("tus_upload_location_missing");
+  const uploadUrl = new URL(location, endpoint).toString();
+
+  const chunkSize = 6 * 1024 * 1024;
+  let offset = 0;
+  while (offset < file.size) {
+    const chunk = file.slice(offset, Math.min(offset + chunkSize, file.size));
+    let uploaded = false;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 5 && !uploaded; attempt += 1) {
+      try {
+        const response = await request(uploadUrl, {
+          method: "PATCH",
+          headers: {
+            "Upload-Offset": String(offset),
+            "Content-Type": "application/offset+octet-stream",
+          },
+          body: chunk,
+        });
+        if (response.ok) {
+          const nextOffset = Number(response.headers.get("Upload-Offset"));
+          if (!Number.isFinite(nextOffset) || nextOffset <= offset) throw new Error("tus_invalid_upload_offset");
+          offset = nextOffset;
+          uploaded = true;
+        } else if (response.status === 409 || response.status >= 500 || response.status === 429) {
+          lastError = new Error(`tus_chunk_failed_${response.status}`);
+        } else {
+          throw new Error(`tus_chunk_failed_${response.status}: ${(await response.text()).slice(0, 160)}`);
+        }
+      } catch (error) {
+        lastError = error;
+      }
+      if (!uploaded && attempt < 4) {
+        // Ask the server for its committed offset before retrying a possibly interrupted chunk.
+        try {
+          const head = await request(uploadUrl, { method: "HEAD" });
+          if (head.ok) {
+            const serverOffset = Number(head.headers.get("Upload-Offset"));
+            if (Number.isFinite(serverOffset) && serverOffset >= 0 && serverOffset <= file.size) offset = serverOffset;
+          }
+        } catch { /* Retry the chunk from the last confirmed offset. */ }
+        await new Promise((resolve) => window.setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+    }
+    if (!uploaded) throw lastError instanceof Error ? lastError : new Error("tus_upload_failed");
+  }
+}
+
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return <label className="grid min-w-0 gap-1.5 text-sm font-medium"><span>{label}</span>{children}{hint ? <span className="text-xs font-normal text-muted-foreground">{hint}</span> : null}</label>;
 }
@@ -246,10 +341,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
         "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif",
       };
       const path = `products/${crypto.randomUUID()}.${extensionByType[file.type]}`;
-      const { error } = await withTimeout(supabase.storage.from("product-images").upload(path, file, {
-        contentType: file.type, cacheControl: "31536000", upsert: false,
-      }), 25000, "image_upload_timeout");
-      if (error) throw error;
+      await uploadLargeImageWithTus(file, path, accessToken);
       const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(path);
       setImagesText((current) => {
         const existing = current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean);
@@ -381,7 +473,7 @@ export function AdminProductsPage({ onBack }: { onBack?: () => void } = {}) {
           <Field label="گزینه‌های قابل انتخاب (JSON)" hint='نوع گزینه: model، color، size یا design'>
             <textarea value={optionsJson} onChange={(e) => setOptionsJson(e.target.value)} rows={5} dir="ltr" spellCheck={false} className={areaClass + " font-mono text-xs"} />
           </Field>
-          <Field label="بارگذاری تصویر از دستگاه" hint="JPG، PNG، WEBP یا AVIF">
+          <Field label="بارگذاری تصویر از دستگاه" hint="JPG، PNG، WEBP یا AVIF؛ حداکثر ۵۰ مگابایت. فایل‌های بزرگ به‌صورت مرحله‌ای بارگذاری می‌شوند.">
             <div className="flex flex-wrap items-center gap-3"><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(e) => void uploadImage(e)} disabled={uploadingImage || (!draft.id && imagesText.split(/[\n,]/).filter((v) => v.trim()).length >= 8)} className="block w-full text-sm file:ml-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary disabled:opacity-50" />{uploadingImage ? <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> در حال بارگذاری...</span> : null}</div>
           </Field>
           <Field label="آدرس تصاویر (قابل ویرایش)" hint="هر خط یک لینک مستقیم تصویر؛ حداکثر ۸ تصویر.">
