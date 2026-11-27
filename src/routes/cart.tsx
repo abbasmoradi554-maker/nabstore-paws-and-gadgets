@@ -88,7 +88,7 @@ function CartPage() {
                   <p className="text-sm text-muted-foreground">{price(p.price)}</p>
                   <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
                     <div className="flex items-center rounded-xl border" role="group" aria-label={t("quantity")}>
-                      <Button variant="ghost" size="icon" aria-label={t("increase")} disabled={item.qty >= CART_MAX_QTY} onClick={() => cart.setQty(item.key, item.qty + 1)}>
+                      <Button variant="ghost" size="icon" aria-label={t("increase")} disabled={item.qty >= CART_MAX_QTY || (typeof p.stockQuantity === "number" && item.qty >= p.stockQuantity)} onClick={() => cart.setQty(item.key, item.qty + 1)}>
                         <Plus />
                       </Button>
                       <span className="w-8 text-center text-sm font-semibold">{num(item.qty)}</span>
