@@ -26,7 +26,7 @@ function mapProduct(row:Row):Product {
   const category = categories.some(c=>c.slug===row.category) ? row.category as CategorySlug : "gadgets";
   const allowedOptions:OptionType[]=["model","color","size","design"];
   return {
-    id:row.id,name:row.name,price:Number(row.price),
+    id:row.id,name:row.name,price:Number(row.price),stockQuantity:row.stock_quantity,
     ...(row.old_price == null ? {} : { oldPrice: Number(row.old_price) }),
     category,...(row.subcategory == null ? {} : { subcategory: row.subcategory }),short:row.short,description:row.description,
     specs:Array.isArray(row.specs)?row.specs:[],
