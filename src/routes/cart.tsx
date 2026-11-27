@@ -59,7 +59,17 @@ function CartPage() {
         <ul className="grid gap-3 lg:col-span-2">
           {cart.items.map((item) => {
             const p = catalog.data?.find((product) => product.id === item.id);
-            if (!p) return null;
+            if (!p) return (
+              <li key={item.key} className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">این محصول دیگر موجود یا فعال نیست</p>
+                  <p className="mt-1 text-xs text-muted-foreground">برای ادامه خرید، این مورد را از سبد حذف کنید.</p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0" onClick={() => cart.remove(item.key)}>
+                  <Trash2 /> حذف
+                </Button>
+              </li>
+            );
             const opts = p.options
               .map((o) => o.values.find((v) => v.fa === item.options[o.type]))
               .filter(Boolean)
@@ -105,9 +115,12 @@ function CartPage() {
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">{t("shippingLater")}</p>
           <p className="mt-1 text-xs leading-6 text-muted-foreground">{t("paymentNote")}</p>
-          <Button asChild size="xl" className="mt-5 w-full">
+          <Button asChild size="xl" className="mt-5 w-full" disabled={cart.items.some((item) => !catalog.data?.some((product) => product.id === item.id))}>
             <Link to="/checkout">{t("goCheckout")}</Link>
           </Button>
+          {cart.items.some((item) => !catalog.data?.some((product) => product.id === item.id)) ? (
+            <p className="mt-2 text-xs leading-6 text-destructive">ابتدا موارد ناموجود را از سبد حذف کنید.</p>
+          ) : null}
           <Link to="/shop" className="mt-3 block text-center text-sm font-semibold text-primary">
             {t("continueShopping")}
           </Link>
