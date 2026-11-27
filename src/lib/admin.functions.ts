@@ -64,17 +64,15 @@ export const updateAdminOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => updateSchema.parse(input))
   .handler(async ({ data }) => {
     const supabaseAdmin = await requireAdmin(data.accessToken);
-    const { data: order, error } = await supabaseAdmin
-      .from("orders")
-      .update({ status: data.status })
-      .eq("id", data.orderId)
-      .select("id, status")
-      .single();
+    const { data: order, error } = await supabaseAdmin.rpc("admin_update_order_status", {
+      p_order_id: data.orderId,
+      p_status: data.status,
+    });
 
-    if (error || !order) {
+    if (error || !order || typeof order !== "object" || !("id" in order) || !("status" in order)) {
       console.error("updateAdminOrderStatus failed", error?.message);
-      throw new Error("admin_update_failed");
+      throw new Error(error?.message?.includes("insufficient_stock") ? "insufficient_stock" : "admin_update_failed");
     }
 
-    return { order };
+    return { order: order as { id: string; status: string } };
   });
