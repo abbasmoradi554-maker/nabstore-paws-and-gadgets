@@ -48,6 +48,8 @@ export type Product = {
   id: string;
   name: Localized;
   price: number; // Toman
+  /** null/undefined means inventory is not tracked; finite values are the remaining units. */
+  stockQuantity?: number | null;
   oldPrice?: number; // Toman, shown struck-through when higher than price
   category: CategorySlug;
   subcategory?: string;
