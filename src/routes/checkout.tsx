@@ -172,6 +172,19 @@ function Checkout() {
     );
   }
 
+  const unavailableItems = cart.items.filter((item) => !catalog.data?.some((product) => product.id === item.id));
+  if (unavailableItems.length > 0) {
+    return (
+      <section className="container-page min-h-[40vh] pt-10 text-center">
+        <div className="mx-auto max-w-lg rounded-2xl border border-amber-500/30 bg-card p-6">
+          <p className="font-bold">سبد خرید نیاز به اصلاح دارد</p>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">یک یا چند محصول دیگر موجود یا فعال نیستند. سفارش تا حذف آن‌ها ثبت نمی‌شود.</p>
+          <Button asChild className="mt-4"><Link to="/cart">بازگشت به سبد خرید و اصلاح آن</Link></Button>
+        </div>
+      </section>
+    );
+  }
+
   if (storeContent.isLoading) {
     return <section className="container-page min-h-[40vh] pt-10 text-center text-sm text-muted-foreground">در حال دریافت تنظیمات نهایی ارسال…</section>;
   }
