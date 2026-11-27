@@ -399,8 +399,15 @@ function AdminPage() {
         order.id === orderId ? { ...order, status: result.order.status } : order
       ));
       toast.success("وضعیت سفارش تغییر کرد");
-    } catch {
-      toast.error("تغییر وضعیت سفارش انجام نشد.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("insufficient_stock")) {
+        toast.error("موجودی فعلی برای خارج‌کردن سفارش از حالت لغوشده کافی نیست.");
+      } else if (message.includes("product_not_available")) {
+        toast.error("یکی از محصولات سفارش غیرفعال یا در دسترس نیست؛ وضعیت سفارش تغییر نکرد.");
+      } else {
+        toast.error("تغییر وضعیت سفارش انجام نشد.");
+      }
     }
   };
 
