@@ -136,6 +136,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_order_status: {
+        Args: { p_order_id: string; p_status: string }
+        Returns: Json
+      }
       place_order_with_rate_limit: {
         Args: {
           p_address: string
