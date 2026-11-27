@@ -70,13 +70,14 @@ async function uploadLargeImageWithTus(
   const endpoint = `${projectUrl.protocol}//${storageHost}/storage/v1/upload/resumable`;
   const encodeMetadata = (value: string) =>
     btoa(Array.from(new TextEncoder().encode(value), (byte) => String.fromCharCode(byte)).join(""));
-  const metadata = [
+  const metadata: [string, string][] = [
     ["bucketName", "product-images"],
     ["objectName", objectPath],
     ["contentType", file.type],
     ["cacheControl", "31536000"],
     ["metadata", JSON.stringify({})],
-  ].map(([key, value]) => `${key} ${encodeMetadata(value)}`).join(",");
+  ];
+  const encodedMetadata = metadata.map(([key, value]) => `${key} ${encodeMetadata(value)}`).join(",");
 
   const headers = {
     apikey: apiKey,
@@ -96,7 +97,7 @@ async function uploadLargeImageWithTus(
       return await fetch(url, {
         method,
         headers: { ...headers, ...extraHeaders },
-        body,
+        ...(body !== undefined ? { body } : {}),
         signal: controller.signal,
       });
     } finally {
@@ -106,7 +107,7 @@ async function uploadLargeImageWithTus(
 
   const created = await request(endpoint, "POST", {
     "Upload-Length": String(file.size),
-    "Upload-Metadata": metadata,
+    "Upload-Metadata": encodedMetadata,
     "x-upsert": "false",
   });
   if (!created.ok) throw new Error(`tus_create_failed_${created.status}: ${(await created.text()).slice(0, 160)}`);
