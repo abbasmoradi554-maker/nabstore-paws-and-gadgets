@@ -71,7 +71,7 @@ export const updateAdminOrderStatus = createServerFn({ method: "POST" })
 
     if (error || !order || typeof order !== "object" || !("id" in order) || !("status" in order)) {
       console.error("updateAdminOrderStatus failed", error?.message);
-      throw new Error(error?.message?.includes("insufficient_stock") ? "insufficient_stock" : "admin_update_failed");
+      throw new Error(error?.message?.includes("insufficient_stock") ? "insufficient_stock" : error?.message?.includes("product_not_available") ? "product_not_available" : "admin_update_failed");
     }
 
     return { order: order as { id: string; status: string } };
