@@ -34,7 +34,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       const reason = result?.error;
       if (reason === "rate_limited") throw new Error("rate_limited");
       if (reason === "email_verification_required") throw new Error("email_verification_required");
-      if (reason === "product_not_available") throw new Error("invalid_items");
+      if (reason === "product_not_available") throw new Error("product_not_available");
       if (reason === "insufficient_stock") throw new Error("insufficient_stock");
       if (reason === "idempotency_conflict") throw new Error("idempotency_conflict");
       console.error("[placeOrder] Edge Function rejected order", response.status, reason ?? "unknown");
