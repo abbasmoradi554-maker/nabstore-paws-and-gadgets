@@ -83,23 +83,31 @@ async function uploadLargeImageWithTus(
     authorization: `Bearer ${accessToken}`,
     "Tus-Resumable": "1.0.0",
   };
-  const request = async (url: string, init: RequestInit, timeoutMs = 120000) => {
+  const request = async (
+    url: string,
+    method: string,
+    extraHeaders: Record<string, string> = {},
+    body?: BodyInit,
+    timeoutMs = 120000,
+  ) => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await fetch(url, { ...init, headers: { ...headers, ...init.headers }, signal: controller.signal });
+      return await fetch(url, {
+        method,
+        headers: { ...headers, ...extraHeaders },
+        body,
+        signal: controller.signal,
+      });
     } finally {
       window.clearTimeout(timer);
     }
   };
 
-  const created = await request(endpoint, {
-    method: "POST",
-    headers: {
-      "Upload-Length": String(file.size),
-      "Upload-Metadata": metadata,
-      "x-upsert": "false",
-    },
+  const created = await request(endpoint, "POST", {
+    "Upload-Length": String(file.size),
+    "Upload-Metadata": metadata,
+    "x-upsert": "false",
   });
   if (!created.ok) throw new Error(`tus_create_failed_${created.status}: ${(await created.text()).slice(0, 160)}`);
   const location = created.headers.get("Location");
@@ -114,14 +122,10 @@ async function uploadLargeImageWithTus(
     let lastError: unknown;
     for (let attempt = 0; attempt < 5 && !uploaded; attempt += 1) {
       try {
-        const response = await request(uploadUrl, {
-          method: "PATCH",
-          headers: {
-            "Upload-Offset": String(offset),
-            "Content-Type": "application/offset+octet-stream",
-          },
-          body: chunk,
-        });
+        const response = await request(uploadUrl, "PATCH", {
+          "Upload-Offset": String(offset),
+          "Content-Type": "application/offset+octet-stream",
+        }, chunk);
         if (response.ok) {
           const nextOffset = Number(response.headers.get("Upload-Offset"));
           if (!Number.isFinite(nextOffset) || nextOffset <= offset) throw new Error("tus_invalid_upload_offset");
@@ -138,7 +142,7 @@ async function uploadLargeImageWithTus(
       if (!uploaded && attempt < 4) {
         // Ask the server for its committed offset before retrying a possibly interrupted chunk.
         try {
-          const head = await request(uploadUrl, { method: "HEAD" });
+          const head = await request(uploadUrl, "HEAD");
           if (head.ok) {
             const serverOffset = Number(head.headers.get("Upload-Offset"));
             if (Number.isFinite(serverOffset) && serverOffset >= 0 && serverOffset <= file.size) offset = serverOffset;
