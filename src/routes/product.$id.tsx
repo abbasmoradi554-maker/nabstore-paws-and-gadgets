@@ -1,37 +1,38 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { Minus, Plus, ShoppingBag, Truck } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Heart, Minus, Plus, ShoppingBag, Truck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { ProductGrid } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
-import { discountPercent, getCategory, getProduct, hasDiscount, relatedProducts, type OptionType } from "@/data/products";
+import { discountPercent, getCategory, hasDiscount, type OptionType, type Product } from "@/data/products";
+import { optimizedProductImage, useCatalogProducts } from "@/lib/catalog";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { siteUrl } from "@/lib/site-config";
 
-const SITE = "https://nabstore-paws-and-gadgets.lovable.app";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const p = getProduct(params.id);
-    if (!p) throw notFound();
-    return { id: p.id, title: p.name.fa, description: `${p.short.fa} — ${p.description.fa}`.slice(0, 160) };
+  head: ({ params }) => {
+    const productLabel = params.id.split("-").filter(Boolean).join(" ");
+    const title = `${productLabel} | خرید از ناب استور`;
+    const description = "مشاهده قیمت، تصاویر، مشخصات و گزینه‌های محصول و ثبت سفارش از فروشگاه اینترنتی ناب استور.";
+    const url = `${siteUrl}/product/${encodeURIComponent(params.id)}`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "product" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
   },
-  head: ({ loaderData, params }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.title} | ناب استور` },
-          { name: "description", content: loaderData.description },
-          { property: "og:title", content: `${loaderData.title} | ناب استور` },
-          { property: "og:description", content: loaderData.description },
-          { property: "og:type", content: "product" },
-          { property: "og:url", content: `${SITE}/product/${params.id}` },
-          { name: "twitter:card", content: "summary" },
-        ]
-      : [{ title: "محصول پیدا نشد | ناب استور" }, { name: "robots", content: "noindex" }],
-    links: loaderData ? [{ rel: "canonical", href: `${SITE}/product/${params.id}` }] : [],
-  }),
   notFoundComponent: ProductNotFound,
   component: ProductPage,
 });
@@ -54,24 +55,29 @@ function ProductNotFound() {
 }
 
 function ProductPage() {
-  const { id } = Route.useLoaderData();
-  // Keyed so option/quantity state resets when moving to a related product.
-  return <ProductDetail key={id} id={id} />;
+  const { id } = Route.useParams();
+  const catalog = useCatalogProducts();
+  const product = catalog.data?.find((item) => item.id === id);
+  if (catalog.isLoading) return <section className="container-page min-h-[40vh] pt-10">در حال دریافت محصول…</section>;
+  if (!product) return <ProductNotFound />;
+  return <ProductDetail key={id} product={product} allProducts={catalog.data ?? []} />;
 }
 
-function ProductDetail({ id }: { id: string }) {
+function ProductDetail({ product, allProducts }: { product: Product; allProducts: Product[] }) {
   const navigate = useNavigate();
-  const product = getProduct(id)!;
+  const id = product.id;
   const category = getCategory(product.category);
   const { t, l, price, num } = useI18n();
   const cart = useCart();
+  const wishlist = useWishlist();
+  const isSaved = wishlist.has(product.id);
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<Record<string, string>>(() =>
     Object.fromEntries(product.options.map((o) => [o.type, o.values[0]?.fa ?? ""])),
   );
   const discount = discountPercent(product);
-  const related = relatedProducts(product);
+  const related = allProducts.filter((item) => item.id !== product.id && item.category === product.category).slice(0, 4);
 
   const addToCart = () => {
     cart.add(product.id, selected, qty);
@@ -100,7 +106,9 @@ function ProductDetail({ id }: { id: string }) {
         <div>
           <div className="relative aspect-square overflow-hidden rounded-3xl border bg-sand">
             <img
-              src={product.images[active] ?? product.images[0]}
+              src={optimizedProductImage(product.images[active] ?? product.images[0] ?? "/favicon.svg", 1200)}
+              onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }}
+              referrerPolicy="no-referrer"
               alt={l(product.name)}
               width={1024}
               height={1024}
@@ -125,7 +133,7 @@ function ProductDetail({ id }: { id: string }) {
                     i === active ? "border-primary" : "border-transparent",
                   )}
                 >
-                  <img src={img} alt="" loading="lazy" width={160} height={160} className="size-full object-cover" />
+                  <img src={optimizedProductImage(img, 180)} alt="" loading="lazy" width={160} height={160} referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }} className="size-full object-cover" />
                 </button>
               ))}
             </div>
@@ -136,7 +144,6 @@ function ProductDetail({ id }: { id: string }) {
           {category && <p className="text-sm font-medium text-primary">{l(category.name)}</p>}
           <h1 className="mt-1 text-2xl font-extrabold leading-snug sm:text-3xl">{l(product.name)}</h1>
           <p className="mt-2 text-muted-foreground">{l(product.short)}</p>
-          <p className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{t("sampleProductNote")}</p>
 
           <div className="mt-5 flex items-end gap-3">
             <span className="text-2xl font-extrabold">{price(product.price)}</span>
@@ -183,6 +190,17 @@ function ProductDetail({ id }: { id: string }) {
             <Button size="xl" className="flex-1" onClick={addToCart}>
               <ShoppingBag />
               {t("addToCart")}
+            </Button>
+            <Button
+              type="button"
+              disabled={!wishlist.ready}
+              size="icon-lg"
+              variant="outline"
+              aria-label={isSaved ? l({ fa: "حذف از علاقه‌مندی‌ها", en: "Remove from wishlist" }) : l({ fa: "افزودن به علاقه‌مندی‌ها", en: "Add to wishlist" })}
+              aria-pressed={isSaved}
+              onClick={() => wishlist.toggle(product.id)}
+            >
+              <Heart className={isSaved ? "fill-rose-500 text-rose-500" : ""} />
             </Button>
           </div>
 

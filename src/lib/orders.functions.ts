@@ -1,57 +1,45 @@
 import { createServerFn } from "@tanstack/react-start";
-
 import { orderInputSchema } from "./order-schema";
-import { priceOrder } from "./order-pricing";
-import type { Json } from "@/integrations/supabase/types";
 
-function makeOrderCode() {
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return `NB-${String((buf[0] ?? 0) % 100000000).padStart(8, "0")}`;
-}
-
-// Public endpoint: anyone can place an order. Input is validated with zod and
-// prices are recalculated from the catalog on the server.
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderInputSchema.parse(input))
   .handler(async ({ data }) => {
-    // Reject automated submissions without revealing the honeypot to the client.
-    if (data.honeypot?.trim()) throw new Error("save_failed");
+    const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"];
+    const publishableKey = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
 
-    let priced: ReturnType<typeof priceOrder>;
-    try {
-      priced = priceOrder(data.items);
-    } catch {
-      throw new Error("invalid_items");
+    if (!supabaseUrl || !publishableKey) {
+      console.error("[placeOrder] Supabase public configuration is missing at build time");
+      throw new Error("save_failed");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const c = data.customer;
+    const { accessToken, ...orderData } = data;
 
-    // The database function takes a per-mobile advisory transaction lock,
-    // checks both windows, and inserts the order in the same transaction.
-    // This is atomic across Cloudflare Worker instances.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const code = makeOrderCode();
-      const { error } = await supabaseAdmin.rpc("place_order_with_rate_limit", {
-        p_order_code: code,
-        p_customer_name: c.name,
-        p_mobile: c.mobile,
-        p_province: c.province,
-        p_city: c.city,
-        p_address: c.address,
-        p_postal_code: c.postalCode,
-        p_notes: c.notes ?? "",
-        p_items: priced.lines as unknown as Json,
-        p_total_toman: priced.total,
-      });
+    // Keep all privileged database work inside Supabase Edge Functions.
+    // Only the publishable key crosses this Cloudflare Worker boundary.
+    const response = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/functions/v1/place-order`, {
+      method: "POST",
+      headers: {
+        apikey: publishableKey,
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify(orderData),
+    });
 
-      if (!error) return { code, lines: priced.lines, total: priced.total };
-      if (error.message.includes("rate_limited")) throw new Error("rate_limited");
-      if (error.code !== "23505") {
-        console.error("placeOrder database operation failed", error.message);
-        throw new Error("save_failed");
-      }
+    const result = await response.json().catch(() => null) as
+      | { code: string; lines: Array<{ id: string; nameFa: string; qty: number; options: Record<string, string>; unitPrice: number; lineTotal: number }>; subtotal: number; shippingToman: number; total: number; error?: string }
+      | null;
+
+    if (!response.ok || !result || !result.code || !Array.isArray(result.lines) || typeof result.total !== "number" || typeof result.shippingToman !== "number") {
+      const reason = result?.error;
+      if (reason === "rate_limited") throw new Error("rate_limited");
+      if (reason === "email_verification_required") throw new Error("email_verification_required");
+      if (reason === "product_not_available") throw new Error("product_not_available");
+      if (reason === "insufficient_stock") throw new Error("insufficient_stock");
+      if (reason === "idempotency_conflict") throw new Error("idempotency_conflict");
+      console.error("[placeOrder] Edge Function rejected order", response.status, reason ?? "unknown");
+      throw new Error("save_failed");
     }
-    throw new Error("save_failed");
+
+    return result;
   });

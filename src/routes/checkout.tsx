@@ -5,13 +5,15 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { getProduct } from "@/data/products";
+import { useCatalogProducts } from "@/lib/catalog";
 import { useCart } from "@/lib/cart";
 import { formatNumber, useI18n, type DictKey } from "@/lib/i18n";
 import { customerSchema, provinces, type CustomerInput } from "@/lib/order-schema";
 import type { PricedLine } from "@/lib/order-pricing";
 import { placeOrder } from "@/lib/orders.functions";
-import { siteConfig, telegramUrl, whatsappUrl } from "@/lib/site-config";
+import { supabase } from "@/integrations/supabase/client";
+import { siteConfig } from "@/lib/site-config";
+import { useStoreContent } from "@/lib/store-content";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/checkout")({
@@ -30,9 +32,27 @@ export const Route = createFileRoute("/checkout")({
 });
 
 type Field = keyof CustomerInput;
-type Placed = { code: string; lines: PricedLine[]; total: number; customer: CustomerInput };
+type Placed = { code: string; lines: PricedLine[]; subtotal: number; shippingToman: number; total: number; customer: CustomerInput };
 
 const empty: CustomerInput = { name: "", mobile: "", province: "" as CustomerInput["province"], city: "", address: "", postalCode: "", notes: "" };
+
+const CHECKOUT_IDEMPOTENCY_STORAGE_KEY = "nabstore-checkout-idempotency";
+
+function getCheckoutIdempotencyKey() {
+  try {
+    const existing = sessionStorage.getItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY);
+    if (existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(existing)) return existing;
+    const created = crypto.randomUUID();
+    sessionStorage.setItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY, created);
+    return created;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+function clearCheckoutIdempotencyKey() {
+  try { sessionStorage.removeItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
+}
 
 function buildSummary(o: Placed) {
   const p = (n: number) => `${formatNumber(n, "fa")} تومان`;
@@ -44,7 +64,9 @@ function buildSummary(o: Placed) {
     `سفارش ${siteConfig.nameFa}`,
     `شماره سفارش: ${o.code}`,
     ...lines,
-    `جمع کل: ${p(o.total)}`,
+    `جمع کالاها: ${p(o.subtotal)}`,
+    `هزینه ارسال: ${o.shippingToman === 0 ? "رایگان" : p(o.shippingToman)}`,
+    `مبلغ نهایی: ${p(o.total)}`,
     `نام: ${o.customer.name}`,
     `موبایل: ${o.customer.mobile}`,
     `نشانی: ${o.customer.province}، ${o.customer.city}، ${o.customer.address}`,
@@ -58,6 +80,16 @@ function buildSummary(o: Placed) {
 function Checkout() {
   const { t, l, price, num } = useI18n();
   const cart = useCart();
+  const catalog = useCatalogProducts();
+  const storeContent = useStoreContent();
+  const shippingConfig = storeContent.data?.["shipping"];
+  const flatShipping = Number(shippingConfig?.flatFeeToman);
+  const freeAbove = Number(shippingConfig?.freeAboveToman);
+  const shippingConfigValid = Number.isSafeInteger(flatShipping) && flatShipping >= 0 &&
+    Number.isSafeInteger(freeAbove) && freeAbove >= 0 && typeof shippingConfig?.enabled === "boolean";
+  const shippingToman = shippingConfigValid
+    ? shippingConfig.enabled === false || (freeAbove > 0 && cart.total >= freeAbove) ? 0 : flatShipping
+    : null;
   const submit = useServerFn(placeOrder);
   const [form, setForm] = useState<CustomerInput>(empty);
   const [errors, setErrors] = useState<Partial<Record<Field, DictKey>>>({});
@@ -69,7 +101,7 @@ function Checkout() {
     setErrors((er) => ({ ...er, [k]: undefined }));
   };
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const parsed = customerSchema.safeParse(form);
     if (!parsed.success) {
@@ -85,15 +117,24 @@ function Checkout() {
     try {
       const formElement = e.currentTarget;
       const honeypot = String(new FormData(formElement).get("website") ?? "");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const idempotencyKey = getCheckoutIdempotencyKey();
       const res = await submit({
-        data: { customer: parsed.data, items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })), honeypot },
+        data: {
+          customer: parsed.data,
+          items: cart.items.map(({ id, qty, options }) => ({ id, qty, options })),
+          idempotencyKey,
+          honeypot,
+          ...(sessionData.session?.access_token ? { accessToken: sessionData.session.access_token } : {}),
+        },
       });
+      clearCheckoutIdempotencyKey();
       setPlaced({ ...res, customer: parsed.data });
       cart.clear();
       window.scrollTo({ top: 0 });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : t("orderFailed"));
+      toast.error(message.includes("rate_limited") ? t("orderRateLimited") : message.includes("email_verification_required") ? "برای اتصال سفارش به حساب، ابتدا ایمیل حساب را تأیید کنید؛ یا بدون ورود سفارش را ثبت کنید." : message.includes("insufficient_stock") ? "موجودی این محصول کافی نیست؛ سبد خرید را به‌روزرسانی کنید." : message.includes("product_not_available") ? "یکی از محصولات دیگر فعال یا قابل سفارش نیست؛ سبد خرید را بررسی کنید." : message.includes("idempotency_conflict") ? "اطلاعات این تلاش با سفارش ثبت‌شده قبلی متفاوت است. برای جلوگیری از ثبت سفارش تکراری، لطفاً پیش از تلاش دوباره با پشتیبانی هماهنگ کنید." : t("orderFailed"));
     } finally {
       setPending(false);
     }
@@ -109,7 +150,16 @@ function Checkout() {
 
   if (placed) return <OrderPlaced order={placed} />;
 
-  if (!cart.ready) return <section className="container-page min-h-[40vh] pt-10" />;
+  if (!cart.ready) return (
+    <section className="container-page min-h-[40vh] pt-10 text-center">
+      {cart.catalogError ? (
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-6">
+          <p className="text-sm text-destructive">دریافت اطلاعات محصولات انجام نشد؛ سفارش شما هنوز ثبت نشده است.</p>
+          <Button className="mt-4" onClick={cart.retryCatalog}>تلاش دوباره</Button>
+        </div>
+      ) : <p className="text-sm text-muted-foreground">در حال دریافت اطلاعات محصولات…</p>}
+    </section>
+  );
 
   if (cart.items.length === 0) {
     return (
@@ -118,6 +168,34 @@ function Checkout() {
         <Button asChild size="lg" className="mt-6 rounded-xl">
           <Link to="/shop">{t("continueShopping")}</Link>
         </Button>
+      </section>
+    );
+  }
+
+  const unavailableItems = cart.items.filter((item) => !catalog.data?.some((product) => product.id === item.id));
+  if (unavailableItems.length > 0) {
+    return (
+      <section className="container-page min-h-[40vh] pt-10 text-center">
+        <div className="mx-auto max-w-lg rounded-2xl border border-amber-500/30 bg-card p-6">
+          <p className="font-bold">سبد خرید نیاز به اصلاح دارد</p>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">یک یا چند محصول دیگر موجود یا فعال نیستند. سفارش تا حذف آن‌ها ثبت نمی‌شود.</p>
+          <Button asChild className="mt-4"><Link to="/cart">بازگشت به سبد خرید و اصلاح آن</Link></Button>
+        </div>
+      </section>
+    );
+  }
+
+  if (storeContent.isLoading) {
+    return <section className="container-page min-h-[40vh] pt-10 text-center text-sm text-muted-foreground">در حال دریافت تنظیمات نهایی ارسال…</section>;
+  }
+
+  if (storeContent.isError || !shippingConfigValid || shippingToman === null) {
+    return (
+      <section className="container-page min-h-[40vh] pt-10 text-center">
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-6">
+          <p className="text-sm text-destructive">تنظیمات هزینه ارسال دریافت نشد؛ برای جلوگیری از نمایش مبلغ اشتباه، ثبت سفارش موقتاً متوقف شده است.</p>
+          <Button className="mt-4" onClick={() => void storeContent.refetch()}>تلاش دوباره</Button>
+        </div>
       </section>
     );
   }
@@ -174,7 +252,7 @@ function Checkout() {
           <h2 className="font-bold">{t("orderSummary")}</h2>
           <ul className="mt-4 grid gap-3 text-sm">
             {cart.items.map((i) => {
-              const p = getProduct(i.id);
+              const p = catalog.data?.find((product) => product.id === i.id);
               if (!p) return null;
               return (
                 <li key={i.key} className="flex justify-between gap-3">
@@ -189,11 +267,16 @@ function Checkout() {
               );
             })}
           </ul>
-          <div className="mt-4 flex justify-between border-t pt-4 font-bold">
-            <span>{t("total")}</span>
-            <span>{price(cart.total)}</span>
+          <div className="mt-4 grid gap-2 border-t pt-4 text-sm">
+            <div className="flex justify-between"><span>جمع کالاها</span><span>{price(cart.total)}</span></div>
+            <div className="flex justify-between"><span>هزینه ارسال</span><span>{shippingToman === 0 ? "رایگان" : price(shippingToman)}</span></div>
+            <p className="text-xs leading-6 text-muted-foreground">
+              {freeAbove > 0 ? `ارسال برای خریدهای ${num(freeAbove)} تومان و بیشتر رایگان است.` : "هزینه ارسال ثابت است."}
+            </p>
+            <div className="flex justify-between border-t pt-3 font-bold">
+              <span>{t("total")}</span><span>{price(cart.total + shippingToman)}</span>
+            </div>
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">{t("shippingLater")}</p>
         </aside>
       </div>
     </section>
@@ -215,9 +298,13 @@ function FormField({ label, error, className, children }: { label: string; error
 
 function OrderPlaced({ order }: { order: Placed }) {
   const { t, price, num } = useI18n();
+  const content = useStoreContent();
+  const store = content.data?.["store"] ?? siteConfig;
   const summary = buildSummary(order);
-  const tg = telegramUrl();
-  const wa = whatsappUrl(summary);
+  const telegram = typeof store.telegram === "string" ? store.telegram.replace(/^@/, "") : "";
+  const whatsapp = typeof store.whatsapp === "string" ? store.whatsapp.replace(/\D/g, "") : "";
+  const tg = telegram && !/^[\[][^\]]*[\]]$/.test(telegram) ? `https://t.me/${telegram}` : "";
+  const wa = whatsapp && !/^[\[][^\]]*[\]]$/.test(whatsapp) ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(summary)}` : "";
 
   const copy = async () => {
     try {

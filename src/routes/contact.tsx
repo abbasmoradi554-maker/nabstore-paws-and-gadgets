@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { siteUrl } from "@/lib/site-config";
 import { Instagram, Mail, MapPin, Phone, Send } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
-import { instagramUrl, isSet, siteConfig, telegramUrl } from "@/lib/site-config";
+import { useStoreContent } from "@/lib/store-content";
+import { isSet, siteConfig } from "@/lib/site-config";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -12,22 +14,30 @@ export const Route = createFileRoute("/contact")({
       { property: "og:title", content: "تماس با ناب استور" },
       { property: "og:description", content: "با پشتیبانی ناب استور در ارتباط باشید." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://nabstore-paws-and-gadgets.lovable.app/contact" },
+      { property: "og:url", content: `${siteUrl}/contact` },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://nabstore-paws-and-gadgets.lovable.app/contact" }],
+    links: [{ rel: "canonical", href: `${siteUrl}/contact` }],
   }),
   component: Contact,
 });
 
 function Contact() {
   const { t } = useI18n();
+  const content = useStoreContent();
+  const store = content.data?.["store"] ?? siteConfig;
+  const instagram = typeof store.instagram === "string" ? store.instagram : "";
+  const telegram = typeof store.telegram === "string" ? store.telegram : "";
+  const instagramHref = isSet(instagram)
+    ? (instagram.startsWith("http") ? instagram : `https://instagram.com/${instagram.replace(/^@/, "")}`)
+    : "";
+  const telegramHref = isSet(telegram) ? `https://t.me/${telegram.replace(/^@/, "")}` : "";
   const items = [
-    { Icon: Phone, label: t("phone"), value: siteConfig.phone, href: isSet(siteConfig.phone) ? `tel:${siteConfig.phone}` : "", ltr: true },
-    { Icon: Mail, label: t("email"), value: siteConfig.email, href: isSet(siteConfig.email) ? `mailto:${siteConfig.email}` : "", ltr: true },
-    { Icon: MapPin, label: t("address"), value: siteConfig.address, href: "", ltr: false },
-    { Icon: Instagram, label: "Instagram", value: siteConfig.instagram, href: instagramUrl(), ltr: true },
-    { Icon: Send, label: "Telegram", value: siteConfig.telegram, href: telegramUrl(), ltr: true },
+    { Icon: Phone, label: t("phone"), value: store.phone, href: isSet(store.phone) ? `tel:${store.phone}` : "", ltr: true },
+    { Icon: Mail, label: t("email"), value: store.email, href: isSet(store.email) ? `mailto:${store.email}` : "", ltr: true },
+    { Icon: MapPin, label: t("address"), value: store.address, href: "", ltr: false },
+    { Icon: Instagram, label: "Instagram", value: store.instagram, href: instagramHref, ltr: true },
+    { Icon: Send, label: "Telegram", value: store.telegram, href: telegramHref, ltr: true },
   ];
   return (
     <section className="container-page max-w-3xl pt-10">

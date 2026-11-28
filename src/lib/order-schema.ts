@@ -37,6 +37,9 @@ export const orderInputSchema = z.object({
   items: z.array(orderItemSchema).min(1).max(30),
   // Hidden checkout honeypot; never shown to genuine customers.
   honeypot: z.string().max(200).optional().default(""),
+  accessToken: z.string().max(4096).optional(),
+  // Reused for safe retries when the server saved an order but the response was lost.
+  idempotencyKey: z.string().uuid().optional(),
 });
 
 export type CustomerInput = z.input<typeof customerSchema>;

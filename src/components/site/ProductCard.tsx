@@ -1,16 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, SlidersHorizontal } from "lucide-react";
+import { Heart, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { getCategory, discountPercent, hasDiscount, type Product } from "@/data/products";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
+import { optimizedProductImage } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
-export function ProductCard({ product, className }: { product: Product; className?: string }) {
+export function ProductCard({ product, className, priority = false }: { product: Product; className?: string; priority?: boolean }) {
   const { l, t, price, num } = useI18n();
   const cart = useCart();
+  const wishlist = useWishlist();
+  const isSaved = wishlist.has(product.id);
   const category = getCategory(product.category);
   const discount = discountPercent(product);
   const needsOptions = product.options.length > 0;
@@ -24,11 +28,15 @@ export function ProductCard({ product, className }: { product: Product; classNam
     >
       <Link to="/product/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden bg-sand">
         <img
-          src={product.images[0]}
+          src={optimizedProductImage(product.images[0] ?? "/favicon.svg", 480)}
+          onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/favicon.svg"; }}
+          referrerPolicy="no-referrer"
           alt={l(product.name)}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
-          width={1024}
+          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+          width={480}
           height={1024}
           className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         />
@@ -39,10 +47,20 @@ export function ProductCard({ product, className }: { product: Product; classNam
             </span>
           )}
         </div>
-        <span className="absolute end-3 top-3 rounded-full bg-card/90 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground backdrop-blur">
-          {t("sampleBadge")}
-        </span>
       </Link>
+      <Button
+        type="button"
+        disabled={!wishlist.ready}
+        size="icon"
+        variant="secondary"
+        aria-label={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
+        aria-pressed={isSaved}
+        title={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
+        onClick={() => wishlist.toggle(product.id)}
+        className="absolute end-3 top-3 z-10 size-9 rounded-full bg-card/95 text-foreground shadow-sm hover:bg-card"
+      >
+        <Heart className={cn("size-4", isSaved && "fill-rose-500 text-rose-500")} />
+      </Button>
 
       <div className="flex flex-1 flex-col gap-1 p-4">
         {category && <span className="text-xs font-medium text-muted-foreground">{l(category.name)}</span>}
@@ -89,8 +107,8 @@ export function ProductCard({ product, className }: { product: Product; classNam
 export function ProductGrid({ products, className }: { products: Product[]; className?: string }) {
   return (
     <div className={cn("grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4", className)}>
-      {products.map((p) => (
-        <ProductCard key={p.id} product={p} />
+      {products.map((p, index) => (
+        <ProductCard key={p.id} product={p} priority={index < 4} />
       ))}
     </div>
   );

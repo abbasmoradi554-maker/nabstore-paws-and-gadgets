@@ -1,6 +1,9 @@
 // Single source for store contact details, used by the header, footer, contact,
 // checkout and policy pages. Replace each [PLACEHOLDER] with the real value.
 // Values still in [BRACKETS] are treated as "not set" and shown as "to be announced".
+// Canonical public origin; update this single value when a custom domain is activated.
+export const siteUrl = "https://nabstore-paws-and-gadgets.abbasmoradi554.workers.dev";
+
 export const siteConfig = {
   nameFa: "ناب استور",
   nameEn: "NABSTORE",

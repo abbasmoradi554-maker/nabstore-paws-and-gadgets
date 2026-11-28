@@ -1,37 +1,56 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+const ADMIN_EMAIL = "abbasmoradi554@gmail.com";
+
+async function admin(accessToken: string) {
+  const url = import.meta.env["VITE_SUPABASE_URL"];
+  const key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) throw new Error("supabase_configuration_missing");
+
+  const db = createClient<Database>(url, key, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  // Verify the access-token signature from cached JWKS where supported.
+  // Unlike getUser(), getClaims() avoids a separate Auth API round-trip on every admin request.
+  const { data, error } = await db.auth.getClaims(accessToken);
+  const email = String(data?.claims?.email ?? "").trim().toLowerCase();
+  if (error || !data?.claims?.sub || email !== ADMIN_EMAIL) {
+    throw new Error("admin_forbidden");
+  }
+  return db;
+}
+
 
 const tokenSchema = z.object({
   accessToken: z.string().min(20).max(4096),
 });
 
+const ordersInputSchema = tokenSchema.extend({
+  offset: z.number().int().min(0).max(100000).default(0),
+});
+
 const updateSchema = tokenSchema.extend({
   orderId: z.string().uuid(),
-  status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
+  status: z.enum(["pending_review", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
 });
 
 async function requireAdmin(accessToken: string) {
-  const allowedEmail = process.env["ADMIN_EMAIL"]?.trim().toLowerCase();
-  if (!allowedEmail) throw new Error("admin_not_configured");
-
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
-  if (error || !data.user?.email || data.user.email.trim().toLowerCase() !== allowedEmail) {
-    throw new Error("admin_forbidden");
-  }
-
-  return supabaseAdmin;
+  return admin(accessToken);
 }
 
 export const getAdminOrders = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => tokenSchema.parse(input))
+  .inputValidator((input: unknown) => ordersInputSchema.parse(input))
   .handler(async ({ data }) => {
     const supabaseAdmin = await requireAdmin(data.accessToken);
     const { data: orders, error } = await supabaseAdmin
       .from("orders")
-      .select("id, order_code, customer_name, mobile, city, total_toman, status, created_at")
+      .select("id, order_code, customer_name, mobile, province, city, address, postal_code, notes, items, total_toman, shipping_toman, status, created_at")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .range(data.offset, data.offset + 49);
 
     if (error) {
       console.error("getAdminOrders failed", error.message);
@@ -45,17 +64,15 @@ export const updateAdminOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => updateSchema.parse(input))
   .handler(async ({ data }) => {
     const supabaseAdmin = await requireAdmin(data.accessToken);
-    const { data: order, error } = await supabaseAdmin
-      .from("orders")
-      .update({ status: data.status })
-      .eq("id", data.orderId)
-      .select("id, status")
-      .single();
+    const { data: order, error } = await supabaseAdmin.rpc("admin_update_order_status", {
+      p_order_id: data.orderId,
+      p_status: data.status,
+    });
 
-    if (error || !order) {
+    if (error || !order || typeof order !== "object" || !("id" in order) || !("status" in order)) {
       console.error("updateAdminOrderStatus failed", error?.message);
-      throw new Error("admin_update_failed");
+      throw new Error(error?.message?.includes("insufficient_stock") ? "insufficient_stock" : error?.message?.includes("product_not_available") ? "product_not_available" : "admin_update_failed");
     }
 
-    return { order };
+    return { order: order as { id: string; status: string } };
   });

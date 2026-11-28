@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { siteUrl } from "@/lib/site-config";
 
 import { InfoPage } from "@/components/site/InfoPage";
 import { pages } from "@/data/pages";
+import { useStoreContent } from "@/lib/store-content";
 
 export const Route = createFileRoute("/shipping")({
   head: () => ({
@@ -11,10 +13,63 @@ export const Route = createFileRoute("/shipping")({
       { property: "og:title", content: "ارسال سفارش | ناب استور" },
       { property: "og:description", content: "نحوه، هزینه و زمان ارسال سفارش‌های ناب استور به سراسر کشور." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://nabstore-paws-and-gadgets.lovable.app/shipping" },
+      { property: "og:url", content: `${siteUrl}/shipping` },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://nabstore-paws-and-gadgets.lovable.app/shipping" }],
+    links: [{ rel: "canonical", href: `${siteUrl}/shipping` }],
   }),
-  component: () => <InfoPage page={pages.shipping} />,
+  component: ShippingPage,
 });
+
+function ShippingPage() {
+  const content = useStoreContent();
+  const shipping = content.data?.["shipping"];
+  const fee = Number(shipping?.flatFeeToman);
+  const freeAbove = Number(shipping?.freeAboveToman);
+  const valid = Number.isSafeInteger(fee) && fee >= 0 && Number.isSafeInteger(freeAbove) && freeAbove >= 0;
+
+  if (content.isLoading) {
+    return <section className="container-page min-h-[40vh] pt-10 text-center text-sm text-muted-foreground">در حال دریافت اطلاعات ارسال…</section>;
+  }
+
+  if (content.isError || !valid) {
+    const fallback = {
+      ...pages.shipping,
+      intro: {
+        fa: "هزینه و روش ارسال پیش از ثبت نهایی سفارش نمایش داده می‌شود. برای اطلاع از جزئیات می‌توانید با پشتیبانی تماس بگیرید.",
+        en: "Shipping cost and method are shown before order confirmation. Contact support for details.",
+      },
+      sections: pages.shipping.sections.map((section, index) => index === 0
+        ? { ...section, body: {
+            fa: "مبلغ نهایی ارسال پیش از ثبت سفارش نمایش داده می‌شود. برای جزئیات بیشتر با پشتیبانی تماس بگیرید.",
+            en: "The final shipping amount is shown before placing an order. Contact support for details.",
+          } }
+        : section),
+    };
+    return <InfoPage page={fallback} />;
+  }
+
+  const copy = shipping?.enabled === false || fee === 0
+    ? {
+        fa: "در حال حاضر هزینه ارسال سفارش‌ها رایگان است. مبلغ نهایی پیش از ثبت سفارش نمایش داده می‌شود.",
+        en: "Shipping is currently free. The final amount is shown before you place your order.",
+      }
+    : freeAbove > 0
+      ? {
+          fa: `هزینه ارسال عادی ${fee.toLocaleString("fa-IR")} تومان است. برای سفارش‌های ${freeAbove.toLocaleString("fa-IR")} تومان و بیشتر، ارسال رایگان خواهد بود. مبلغ نهایی پیش از ثبت سفارش نمایش داده می‌شود.`,
+          en: `Standard shipping is ${fee.toLocaleString("en-US")} Toman. Orders of ${freeAbove.toLocaleString("en-US")} Toman or more ship free. The final amount is shown before you place your order.`,
+        }
+      : {
+          fa: `هزینه ارسال عادی ${fee.toLocaleString("fa-IR")} تومان است. مبلغ نهایی پیش از ثبت سفارش نمایش داده می‌شود.`,
+          en: `Standard shipping is ${fee.toLocaleString("en-US")} Toman. The final amount is shown before you place your order.`,
+        };
+
+  const page = {
+    ...pages.shipping,
+    intro: copy,
+    sections: pages.shipping.sections.map((section, index) =>
+      index === 0 ? { ...section, body: copy } : section
+    ),
+  };
+  return <InfoPage page={page} />;
+}

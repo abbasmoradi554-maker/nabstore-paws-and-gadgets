@@ -7,7 +7,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { categories } from "@/data/products";
 import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
-import { comingSoon } from "./coming-soon";
+import { useStoreContent } from "@/lib/store-content";
+import { useWishlist } from "@/lib/wishlist";
 import { Logo } from "./Logo";
 
 function SearchBox({ className }: { className?: string }) {
@@ -27,6 +28,8 @@ function SearchBox({ className }: { className?: string }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t("searchPlaceholder")}
+          maxLength={100}
+          aria-label={t("search")}
           className="h-11 w-full rounded-xl border border-transparent bg-secondary ps-11 pe-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-card"
         />
       </label>
@@ -46,7 +49,12 @@ function LangSwitch() {
 
 export function Header() {
   const { t, l, num } = useI18n();
+  const content = useStoreContent();
+  const announcement = content.data?.["home"]?.announcement;
+  const announcementText = announcement && typeof announcement === "object" ? l(announcement) : t("previewNotice");
+  const visibleCategories = Array.isArray(content.data?.["categories"]) ? content.data["categories"] : categories;
   const cart = useCart();
+  const wishlist = useWishlist();
   const [open, setOpen] = useState(false);
 
   const mainLinks = [
@@ -65,7 +73,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40">
       <div className="bg-ink text-ink-foreground">
-        <p className="container-page py-2 text-center text-[0.72rem] leading-relaxed sm:text-xs">{t("previewNotice")}</p>
+        <p className="container-page py-2 text-center text-[0.72rem] leading-relaxed sm:text-xs">{announcementText}</p>
       </div>
 
       <div className="border-b bg-background/90 backdrop-blur-xl">
@@ -96,7 +104,7 @@ export function Header() {
                   </Link>
                 ))}
                 <p className="mt-4 px-3 text-xs font-semibold uppercase text-muted-foreground">{t("categories")}</p>
-                {categories.map((c) => (
+                {visibleCategories.map((c: (typeof categories)[number]) => (
                   <Link
                     key={c.slug}
                     to="/category/$slug"
@@ -132,17 +140,16 @@ export function Header() {
             <div className="hidden sm:block">
               <LangSwitch />
             </div>
-            <Button variant="ghost" size="icon-lg" aria-label={t("account")} onClick={() => comingSoon(t("comingSoon"))}>
-              <UserRound className="size-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              className="hidden sm:inline-flex"
-              aria-label={t("wishlist")}
-              onClick={() => comingSoon(t("comingSoon"))}
-            >
-              <Heart className="size-5" />
+            <Button asChild variant="ghost" size="icon-lg" aria-label={t("account")}><Link to="/account"><UserRound className="size-5" /></Link></Button>
+            <Button asChild variant="ghost" size="icon-lg" className="relative">
+              <Link to="/wishlist" aria-label={t("wishlist")}>
+                <Heart className="size-5" />
+                {wishlist.count > 0 && (
+                  <span className="absolute -top-0.5 -end-0.5 grid min-w-5 place-items-center rounded-full bg-highlight px-1 text-[0.65rem] font-bold leading-5 text-highlight-foreground">
+                    {num(wishlist.count)}
+                  </span>
+                )}
+              </Link>
             </Button>
             <Button asChild variant="ghost" size="icon-lg" className="relative">
               <Link to="/cart" aria-label={t("cart")}>

@@ -10,7 +10,7 @@ create or replace function public.place_order_with_rate_limit(
   p_postal_code text,
   p_notes text,
   p_items jsonb,
-  p_total_toman integer
+  p_total_toman bigint
 )
 returns jsonb
 language plpgsql
@@ -51,9 +51,9 @@ end;
 $$;
 
 revoke all on function public.place_order_with_rate_limit(
-  text, text, text, text, text, text, text, text, jsonb, integer
+  text, text, text, text, text, text, text, text, jsonb, bigint
 ) from public, anon, authenticated;
 
 grant execute on function public.place_order_with_rate_limit(
-  text, text, text, text, text, text, text, text, jsonb, integer
+  text, text, text, text, text, text, text, text, jsonb, bigint
 ) to service_role;

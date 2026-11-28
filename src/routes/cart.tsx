@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getProduct } from "@/data/products";
+import { useCatalogProducts } from "@/lib/catalog";
 import { CART_MAX_QTY, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 
@@ -24,8 +24,18 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const { t, l, price, num } = useI18n();
   const cart = useCart();
+  const catalog = useCatalogProducts();
 
-  if (!cart.ready) return <section className="container-page min-h-[40vh] pt-10" />;
+  if (!cart.ready) return (
+    <section className="container-page min-h-[40vh] pt-10 text-center">
+      {cart.catalogError ? (
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-6">
+          <p className="text-sm text-destructive">دریافت محصولات انجام نشد؛ سبد خرید شما حذف نشده است.</p>
+          <Button className="mt-4" onClick={cart.retryCatalog}>تلاش دوباره</Button>
+        </div>
+      ) : <p className="text-sm text-muted-foreground">در حال دریافت اطلاعات محصولات…</p>}
+    </section>
+  );
 
   if (cart.items.length === 0) {
     return (
@@ -48,8 +58,18 @@ function CartPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <ul className="grid gap-3 lg:col-span-2">
           {cart.items.map((item) => {
-            const p = getProduct(item.id);
-            if (!p) return null;
+            const p = catalog.data?.find((product) => product.id === item.id);
+            if (!p) return (
+              <li key={item.key} className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <div className="min-w-0">
+                  <p className="font-semibold">این محصول دیگر موجود یا فعال نیست</p>
+                  <p className="mt-1 text-xs text-muted-foreground">برای ادامه خرید، این مورد را از سبد حذف کنید.</p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0" onClick={() => cart.remove(item.key)}>
+                  <Trash2 /> حذف
+                </Button>
+              </li>
+            );
             const opts = p.options
               .map((o) => o.values.find((v) => v.fa === item.options[o.type]))
               .filter(Boolean)
@@ -68,7 +88,7 @@ function CartPage() {
                   <p className="text-sm text-muted-foreground">{price(p.price)}</p>
                   <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
                     <div className="flex items-center rounded-xl border" role="group" aria-label={t("quantity")}>
-                      <Button variant="ghost" size="icon" aria-label={t("increase")} disabled={item.qty >= CART_MAX_QTY} onClick={() => cart.setQty(item.key, item.qty + 1)}>
+                      <Button variant="ghost" size="icon" aria-label={t("increase")} disabled={item.qty >= CART_MAX_QTY || (typeof p.stockQuantity === "number" && item.qty >= p.stockQuantity)} onClick={() => cart.setQty(item.key, item.qty + 1)}>
                         <Plus />
                       </Button>
                       <span className="w-8 text-center text-sm font-semibold">{num(item.qty)}</span>
@@ -95,9 +115,12 @@ function CartPage() {
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">{t("shippingLater")}</p>
           <p className="mt-1 text-xs leading-6 text-muted-foreground">{t("paymentNote")}</p>
-          <Button asChild size="xl" className="mt-5 w-full">
+          <Button asChild size="xl" className="mt-5 w-full" disabled={cart.items.some((item) => !catalog.data?.some((product) => product.id === item.id))}>
             <Link to="/checkout">{t("goCheckout")}</Link>
           </Button>
+          {cart.items.some((item) => !catalog.data?.some((product) => product.id === item.id)) ? (
+            <p className="mt-2 text-xs leading-6 text-destructive">ابتدا موارد ناموجود را از سبد حذف کنید.</p>
+          ) : null}
           <Link to="/shop" className="mt-3 block text-center text-sm font-semibold text-primary">
             {t("continueShopping")}
           </Link>

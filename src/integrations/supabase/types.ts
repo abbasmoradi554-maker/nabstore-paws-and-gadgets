@@ -29,6 +29,8 @@ export type Database = {
           province: string
           status: string
           total_toman: number
+          shipping_toman: number
+          user_id: string | null
         }
         Insert: {
           address: string
@@ -44,6 +46,8 @@ export type Database = {
           province: string
           status?: string
           total_toman: number
+          shipping_toman?: number
+          user_id?: string | null
         }
         Update: {
           address?: string
@@ -59,7 +63,72 @@ export type Database = {
           province?: string
           status?: string
           total_toman?: number
+          shipping_toman?: number
+          user_id?: string | null
         }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          active: boolean
+          added_order: number
+          category: string
+          description: Json
+          id: string
+          images: Json
+          name: Json
+          old_price: number | null
+          options: Json
+          price: number
+          short: Json
+          specs: Json
+          stock_quantity: number | null
+          subcategory: string | null
+          tags: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          added_order?: number
+          category: string
+          description?: Json
+          id: string
+          images?: Json
+          name: Json
+          old_price?: number | null
+          options?: Json
+          price: number
+          short?: Json
+          specs?: Json
+          stock_quantity?: number | null
+          subcategory?: string | null
+          tags?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          added_order?: number
+          category?: string
+          description?: Json
+          id?: string
+          images?: Json
+          name?: Json
+          old_price?: number | null
+          options?: Json
+          price?: number
+          short?: Json
+          specs?: Json
+          stock_quantity?: number | null
+          subcategory?: string | null
+          tags?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      store_content: {
+        Row: { key: string; value: Json; updated_at: string }
+        Insert: { key: string; value: Json; updated_at?: string }
+        Update: { key?: string; value?: Json; updated_at?: string }
         Relationships: []
       }
     }
@@ -67,6 +136,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_order_status: {
+        Args: { p_order_id: string; p_status: string }
+        Returns: Json
+      }
       place_order_with_rate_limit: {
         Args: {
           p_address: string
@@ -79,8 +152,14 @@ export type Database = {
           p_postal_code: string
           p_province: string
           p_total_toman: number
+          p_shipping_toman: number
+          p_user_id?: string | null
         }
         Returns: Json
+      }
+      record_order_claim_attempt: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

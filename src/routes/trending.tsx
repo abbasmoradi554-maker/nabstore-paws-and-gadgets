@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 
 import { ProductGrid } from "@/components/site/ProductCard";
-import { byTag } from "@/data/products";
+
 import { useI18n } from "@/lib/i18n";
+import { useCatalogProducts } from "@/lib/catalog";
 
 export const Route = createFileRoute("/trending")({
   head: () => ({
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/trending")({
 
 function Trending() {
   const { t } = useI18n();
+  const catalog = useCatalogProducts();
+  const trending = (catalog.data ?? []).filter(p => p.tags.includes("trending"));
   return (
     <section className="container-page pt-8">
       <div className="rounded-3xl bg-ink-gradient p-8 sm:p-10">
@@ -31,7 +34,7 @@ function Trending() {
         <h1 className="mt-3 text-3xl font-extrabold text-ink-foreground">{t("trendingNow")}</h1>
         <p className="mt-2 text-ink-foreground/70">{t("trendingSubtitle")}</p>
       </div>
-      <ProductGrid products={byTag("trending")} className="mt-8" />
+      {catalog.isLoading ? <p className="mt-8 text-sm text-muted-foreground">در حال دریافت محصولات…</p> : <ProductGrid products={trending} className="mt-8" />}
     </section>
   );
 }

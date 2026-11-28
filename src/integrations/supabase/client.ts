@@ -18,6 +18,33 @@ function serverSupabaseUrl(publicUrl: string, supabaseKey: string): string | und
 function createSupabaseFetch(supabaseUrl: string, supabaseKey: string): typeof fetch {
   const publicUrl = supabaseUrl.replace(/\/+$/, '');
   const serverUrl = serverSupabaseUrl(publicUrl, supabaseKey);
+
+  const fetchWithAuthTimeout: typeof fetch = async (input, init) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const isAuthTokenRequest = new URL(url, publicUrl).pathname.endsWith('/auth/v1/token');
+    if (!isAuthTokenRequest) return fetch(input, init);
+
+    // Supabase Auth has occasionally left token/refresh requests open for nearly
+    // two minutes. Abort the network request itself so timed-out requests cannot
+    // remain pending in the browser after the UI has already shown an error.
+    const controller = new AbortController();
+    const originalSignal = init?.signal ?? (typeof Request !== 'undefined' && input instanceof Request ? input.signal : undefined);
+    const abortFromCaller = () => controller.abort(originalSignal?.reason);
+    if (originalSignal?.aborted) abortFromCaller();
+    else originalSignal?.addEventListener('abort', abortFromCaller, { once: true });
+
+    const timeout = setTimeout(() => {
+      controller.abort(new DOMException('Supabase Auth request timed out after 10000ms', 'TimeoutError'));
+    }, 10000);
+
+    try {
+      return await fetch(input, { ...init, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+      originalSignal?.removeEventListener('abort', abortFromCaller);
+    }
+  };
+
   return (input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
@@ -38,10 +65,10 @@ function createSupabaseFetch(supabaseUrl: string, supabaseKey: string): typeof f
       if (url.startsWith(`${publicUrl}/`)) {
         const target = serverUrl + url.slice(publicUrl.length);
         const request = typeof input === 'string' || input instanceof URL ? target : new Request(target, input);
-        return fetch(request, { ...init, headers });
+        return fetchWithAuthTimeout(request, { ...init, headers });
       }
     }
-    return fetch(input, { ...init, headers });
+    return fetchWithAuthTimeout(input, { ...init, headers });
   };
 }
 
