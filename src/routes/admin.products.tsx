@@ -66,7 +66,7 @@ async function uploadLargeImageWithTus(
   if (!supabaseUrl || !apiKey) throw new Error("storage_configuration_missing");
 
   const projectUrl = new URL(supabaseUrl);
-  const storageHost = projectUrl.hostname.replace(/\\.supabase\\.co$/, ".storage.supabase.co");
+  const storageHost = projectUrl.hostname.replace(/\.supabase\.co$/, ".storage.supabase.co");
   const endpoint = `${projectUrl.protocol}//${storageHost}/storage/v1/upload/resumable`;
   const encodeMetadata = (value: string) =>
     btoa(Array.from(new TextEncoder().encode(value), (byte) => String.fromCharCode(byte)).join(""));
